@@ -48,7 +48,7 @@ export interface OverlayStyle {
   accentColor: string;
   positiveColor: string;
   negativeColor: string;
-  /** official = Faceit-Symbol, badge = selbst gezeichneter Kreis */
+  /** badge = eingebauter Nachbau im Faceit-Stil, official = Originaldatei vom Faceit-CDN */
   levelIcon: 'official' | 'badge';
   showAvatarFrame: boolean;
 }

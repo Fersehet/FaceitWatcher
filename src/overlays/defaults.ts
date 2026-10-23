@@ -71,7 +71,7 @@ export function defaultStyle(): OverlayStyle {
     accentColor: '#ff5500',
     positiveColor: '#32d74b',
     negativeColor: '#ff453a',
-    levelIcon: 'official',
+    levelIcon: 'badge',
     showAvatarFrame: true,
   };
 }

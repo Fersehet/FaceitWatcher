@@ -43,15 +43,32 @@ export function assetUrl(remote) {
 // Level-Symbole, die nicht geladen werden konnten: dann den gezeichneten Kreis verwenden
 const missingLevelIcons = new Set();
 
+// Nachbau der Faceit-Level-Symbole: dunkle Scheibe, Bogen über 270° (Lücke unten), Füllung = Level / 10
+function arcPath(r, fromDeg, sweepDeg) {
+  const point = (deg) => {
+    const rad = (deg * Math.PI) / 180;
+    return `${(50 + r * Math.sin(rad)).toFixed(2)} ${(50 - r * Math.cos(rad)).toFixed(2)}`;
+  };
+  return `M ${point(fromDeg)} A ${r} ${r} 0 ${sweepDeg > 180 ? 1 : 0} 1 ${point(fromDeg + sweepDeg)}`;
+}
+
+export function levelBadgeSvg(level) {
+  const n = Math.min(10, Math.max(1, Math.round(level)));
+  const color = levelColor(n);
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="48" fill="#1f2125" stroke="#2c2f34" stroke-width="2"/>
+    <path d="${arcPath(36, 225, 270)}" fill="none" stroke="#3a3d42" stroke-width="9"/>
+    <path d="${arcPath(36, 225, 27 * n)}" fill="none" stroke="${color}" stroke-width="9"/>
+    <text x="50" y="51" text-anchor="middle" dominant-baseline="central" font-family="Arial, Helvetica, sans-serif"
+      font-weight="700" font-size="${n === 10 ? 32 : 38}" fill="${color}">${n}</text>
+  </svg>`;
+}
+
 function levelBadge(level, size) {
-  return el(
-    'div',
-    {
-      width: `${size * 1.4}px`, height: `${size * 1.4}px`, borderRadius: '50%', display: 'grid', placeItems: 'center',
-      border: `${Math.max(2, size / 8)}px solid ${levelColor(level)}`, color: levelColor(level), fontWeight: 700, background: 'rgba(0,0,0,0.35)',
-    },
-    String(level),
-  );
+  const wrap = el('div', { width: `${size * 1.6}px`, height: `${size * 1.6}px` });
+  wrap.innerHTML = levelBadgeSvg(level);
+  wrap.firstElementChild.style.display = 'block';
+  return wrap;
 }
 
 function signed(n) {

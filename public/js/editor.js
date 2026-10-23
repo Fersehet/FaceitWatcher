@@ -253,7 +253,7 @@ const STYLE_FIELDS = [
   ['accentColor', 'Akzentfarbe', 'color'],
   ['positiveColor', 'Farbe Sieg / Plus', 'color'],
   ['negativeColor', 'Farbe Niederlage / Minus', 'color'],
-  ['levelIcon', 'Level-Symbol', 'select', { options: [['official', 'Offiziell (Faceit)'], ['badge', 'Eigener Kreis']] }],
+  ['levelIcon', 'Level-Symbol', 'select', { options: [['badge', 'Faceit-Stil (eingebaut)'], ['official', 'Original-Datei von Faceit laden']] }],
   ['showAvatarFrame', 'Faceit-Avatar-Rahmen', 'checkbox'],
 ];
 
