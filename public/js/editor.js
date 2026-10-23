@@ -95,6 +95,43 @@ function setupDragging() {
   });
 }
 
+// Ein frisch eingeblendetes Widget, das über einem anderen liegt, bekommt einen freien Platz.
+// Gibt es keinen, wird das Overlay nach unten vergrößert.
+function placeWithoutOverlap(widget) {
+  const preview = $('preview');
+  const rectOf = (node) => {
+    const r = node.getBoundingClientRect();
+    const base = preview.firstElementChild.getBoundingClientRect();
+    return { x: (r.left - base.left) / scale, y: (r.top - base.top) / scale, w: r.width / scale, h: r.height / scale };
+  };
+  const nodes = [...preview.querySelectorAll('[data-widget-id]')];
+  const own = nodes.find((n) => n.dataset.widgetId === widget.id);
+  if (!own) return;
+  const { w, h } = rectOf(own);
+  const others = nodes.filter((n) => n !== own).map(rectOf);
+  const gap = 6;
+  const free = (x, y) => others.every((o) => x + w + gap <= o.x || o.x + o.w + gap <= x || y + h + gap <= o.y || o.y + o.h + gap <= y);
+  if (free(widget.x, widget.y)) return;
+
+  const { width, height } = overlay.style;
+  for (let y = 8; y + h <= height - 8; y += 4) {
+    for (let x = 16; x + w <= width - 8; x += 4) {
+      if (free(x, y)) {
+        widget.x = x;
+        widget.y = y;
+        renderWidgetList();
+        return;
+      }
+    }
+  }
+  const bottom = Math.max(0, ...others.map((o) => o.y + o.h));
+  widget.x = 16;
+  widget.y = Math.round(bottom + gap * 2);
+  overlay.style.height = Math.ceil(widget.y + h + 12);
+  renderWidgetList();
+  renderStyleForm();
+}
+
 function select(id) {
   selectedId = id;
   renderWidgetList();
@@ -137,6 +174,8 @@ function renderWidgetList() {
     head.className = 'head';
     const toggle = input('checkbox', w.enabled, (v) => {
       w.enabled = v;
+      drawPreview();
+      if (v) placeWithoutOverlap(w);
       changed();
     });
     toggle.setAttribute('aria-label', `${w.label} anzeigen`);
@@ -252,6 +291,13 @@ async function openOverlay(id) {
   renderWidgetList();
   renderStyleForm();
   drawPreview();
+  const toPlace = overlay.widgets.filter((w) => w.autoPlace);
+  for (const w of toPlace) {
+    delete w.autoPlace;
+    if (w.enabled) placeWithoutOverlap(w);
+    drawPreview();
+  }
+  if (toPlace.length) scheduleSave();
 }
 
 // ---------- Live-Status ----------
@@ -269,6 +315,11 @@ function renderStatus() {
     status.textContent = state?.player ? `Live: ${state.player.nickname}` : 'Verbinde…';
   }
   if (document.activeElement !== $('nickname')) $('nickname').value = state?.nickname ?? '';
+  if (document.activeElement !== $('seasonStart')) $('seasonStart').value = state?.seasonStart ?? '';
+  const season = state?.season;
+  $('seasonInfo').textContent = season
+    ? `Season: ${season.wins}W / ${season.losses}L in ${season.matches} Matches (${season.winRate}%)`
+    : state?.seasonStart ? '' : 'Ohne Datum zeigt „Season Winrate“ nur einen Strich.';
   const s = state?.session;
   $('sessionInfo').textContent = s
     ? `Session seit ${new Date(s.startedAt).toLocaleString('de-DE')}: ${s.wins}W / ${s.losses}L, Elo ${s.eloChange >= 0 ? '+' : ''}${s.eloChange}`
@@ -315,6 +366,11 @@ async function init() {
   $('nicknameForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     state = await api('PUT', '/api/nickname', { nickname: $('nickname').value });
+    renderStatus();
+    drawPreview();
+  });
+  $('seasonStart').addEventListener('change', async (e) => {
+    state = await api('PUT', '/api/season', { start: e.target.value });
     renderStatus();
     drawPreview();
   });

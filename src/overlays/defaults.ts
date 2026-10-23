@@ -11,6 +11,7 @@ const LABELS: Record<WidgetType, string> = {
   sessionRecord: 'Heute',
   matches: 'Matches',
   winRate: 'Winrate',
+  seasonWinRate: 'Season Winrate',
   kd: 'K/D',
   hsPercent: 'HS %',
   adr: 'ADR',
@@ -31,12 +32,13 @@ const LAYOUT: Record<WidgetType, Layout> = {
   sessionRecord: { x: 320, y: 18, fontSize: 18, enabled: true, showLabel: true },
   matches: { x: 16, y: 120, fontSize: 16, enabled: false, showLabel: true },
   winRate: { x: 16, y: 120, fontSize: 16, enabled: true, showLabel: true },
+  seasonWinRate: { x: 300, y: 120, fontSize: 16, enabled: false, showLabel: true },
   kd: { x: 100, y: 120, fontSize: 16, enabled: true, showLabel: true },
   hsPercent: { x: 170, y: 120, fontSize: 16, enabled: true, showLabel: true },
   adr: { x: 240, y: 120, fontSize: 16, enabled: false, showLabel: true },
   currentStreak: { x: 240, y: 120, fontSize: 16, enabled: false, showLabel: true },
   longestStreak: { x: 320, y: 120, fontSize: 16, enabled: false, showLabel: true },
-  recentResults: { x: 260, y: 124, fontSize: 14, enabled: true, showLabel: false },
+  recentResults: { x: 240, y: 58, fontSize: 14, enabled: true, showLabel: false },
 };
 
 export function defaultWidgets(): Widget[] {
@@ -77,6 +79,20 @@ export function createDefaultOverlay(name = 'Standard'): Overlay {
     widgets: defaultWidgets(),
     updatedAt: new Date().toISOString(),
   };
+}
+
+/** Bringt gespeicherte Overlays auf den Stand neuer Versionen, ohne eigene Anpassungen zu überschreiben. */
+export function upgradeOverlay(overlay: Overlay): Overlay {
+  const known = new Set(overlay.widgets.map((w) => w.type));
+  overlay.widgets.push(...defaultWidgets().filter((w) => !known.has(w.type)).map((w) => ({ ...w, enabled: false })));
+  // Alte Standardposition der letzten Matches lag über der ADR
+  const recent = overlay.widgets.find((w) => w.type === 'recentResults');
+  if (recent && recent.x === 260 && recent.y === 124) {
+    recent.x = LAYOUT.recentResults.x!;
+    recent.y = LAYOUT.recentResults.y!;
+    recent.autoPlace = true;
+  }
+  return overlay;
 }
 
 export { LABELS as WIDGET_LABELS };

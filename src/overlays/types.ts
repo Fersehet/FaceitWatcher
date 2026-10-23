@@ -8,6 +8,7 @@ export const WIDGET_TYPES = [
   'sessionRecord',
   'matches',
   'winRate',
+  'seasonWinRate',
   'kd',
   'hsPercent',
   'adr',
@@ -29,6 +30,8 @@ export interface Widget {
   color: string;
   label: string;
   showLabel: boolean;
+  /** Vom Server gesetzt: der Editor soll das Widget auf einen freien Platz schieben. */
+  autoPlace?: boolean;
 }
 
 export interface OverlayStyle {

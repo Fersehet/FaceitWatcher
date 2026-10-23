@@ -1,4 +1,4 @@
-import { levelForElo, type PlayerSnapshot, type StatsSource } from './types.ts';
+import { levelForElo, type MatchRecord, type PlayerSnapshot, type StatsSource } from './types.ts';
 
 /**
  * Liefert erfundene Daten, solange kein API-Key eingetragen ist.
@@ -36,6 +36,11 @@ export class DemoSource implements StatsSource {
       recentResults: [...this.recent],
       fetchedAt: new Date().toISOString(),
     };
+  }
+
+  async fetchRecordSince(): Promise<MatchRecord> {
+    // Demo: die Season begann vor 40 Matches mit 22 Siegen Rückstand zum Lifetime-Stand
+    return { matches: this.matches - 602, wins: this.wins - 329 };
   }
 
   private playMatch() {

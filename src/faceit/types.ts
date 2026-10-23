@@ -18,9 +18,16 @@ export interface PlayerSnapshot {
   fetchedAt: string;
 }
 
+export interface MatchRecord {
+  matches: number;
+  wins: number;
+}
+
 export interface StatsSource {
   readonly demo: boolean;
   fetchPlayer(nickname: string): Promise<PlayerSnapshot>;
+  /** Siege und Matches seit einem Zeitpunkt (z. B. Season-Start). */
+  fetchRecordSince(playerId: string, since: Date): Promise<MatchRecord>;
 }
 
 /** Faceit CS2 Level-Grenzen (Mindest-Elo pro Level). */

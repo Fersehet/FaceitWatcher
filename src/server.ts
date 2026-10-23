@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { config, isDemo } from './config.ts';
 import { FaceitClient } from './faceit/client.ts';
 import { DemoSource } from './faceit/demo.ts';
-import { createDefaultOverlay, defaultWidgets, WIDGET_LABELS } from './overlays/defaults.ts';
+import { createDefaultOverlay, upgradeOverlay, WIDGET_LABELS } from './overlays/defaults.ts';
 import type { Overlay } from './overlays/types.ts';
 import { SqliteStorage } from './storage/sqlite.ts';
 import { Tracker } from './tracker.ts';
@@ -53,6 +53,13 @@ app.put('/api/nickname', async (req, res) => {
   res.json(tracker.state);
 });
 
+app.put('/api/season', async (req, res) => {
+  const start = String(req.body?.start ?? '').trim();
+  if (start && Number.isNaN(Date.parse(start))) return void res.status(400).json({ error: 'Ungültiges Datum' });
+  await tracker.setSeasonStart(start);
+  res.json(tracker.state);
+});
+
 app.post('/api/session/reset', (_req, res) => {
   tracker.resetSession();
   res.json(tracker.state);
@@ -74,10 +81,7 @@ app.get('/api/overlays', (_req, res) => res.json(storage.listOverlays(OWNER)));
 app.get('/api/overlays/:id', (req, res) => {
   const overlay = storage.getOverlay(req.params.id);
   if (!overlay) return void res.status(404).json({ error: 'Overlay nicht gefunden' });
-  // Neue Stat-Typen aus späteren Versionen ergänzen, ohne bestehende Einstellungen zu verlieren
-  const known = new Set(overlay.widgets.map((w) => w.type));
-  overlay.widgets.push(...defaultWidgets().filter((w) => !known.has(w.type)).map((w) => ({ ...w, enabled: false })));
-  res.json(overlay);
+  res.json(upgradeOverlay(overlay));
 });
 
 app.post('/api/overlays', (req, res) => {

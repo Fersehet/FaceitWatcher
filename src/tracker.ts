@@ -17,11 +17,22 @@ export interface SessionStats {
   losses: number;
 }
 
+export interface SeasonStats {
+  start: string;
+  matches: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+}
+
 export interface LiveState {
   demo: boolean;
   nickname: string;
+  /** Datum (YYYY-MM-DD) des Season-Starts, leer = nicht gesetzt */
+  seasonStart: string;
   player: PlayerSnapshot | null;
   session: SessionStats | null;
+  season: SeasonStats | null;
   error: string | null;
   updatedAt: string | null;
 }
@@ -41,11 +52,15 @@ export class Tracker extends EventEmitter {
     defaultNickname: string,
   ) {
     super();
+    // Demo-Daten beginnen bei jedem Start neu, eine alte Session passt dann nicht mehr dazu
+    if (source.demo) storage.setSetting('session', '');
     this.state = {
       demo: source.demo,
       nickname: storage.getSetting('nickname') ?? defaultNickname,
+      seasonStart: storage.getSetting('seasonStart') ?? '',
       player: null,
       session: null,
+      season: null,
       error: null,
       updatedAt: null,
     };
@@ -66,6 +81,14 @@ export class Tracker extends EventEmitter {
     this.storage.setSetting('session', '');
     this.state.player = null;
     this.state.session = null;
+    this.state.season = null;
+    await this.poll();
+  }
+
+  async setSeasonStart(start: string) {
+    this.state.seasonStart = start;
+    this.storage.setSetting('seasonStart', start);
+    this.state.season = null;
     await this.poll();
   }
 
@@ -88,6 +111,7 @@ export class Tracker extends EventEmitter {
       this.storage.saveSnapshot(player);
       this.state.player = player;
       this.state.session = this.sessionStats(player);
+      await this.updateSeason(player);
       this.state.error = null;
     } catch (err) {
       this.state.error = err instanceof Error ? err.message : String(err);
@@ -104,14 +128,36 @@ export class Tracker extends EventEmitter {
       session = this.newSession(player);
       this.saveSession(session);
     }
-    const matches = player.matches - session.startMatches;
-    const wins = player.wins - session.startWins;
+    const matches = Math.max(0, player.matches - session.startMatches);
+    // Faceit zählt "Wins" manchmal etwas später hoch als "Matches", daher begrenzen
+    const wins = Math.min(matches, Math.max(0, player.wins - session.startWins));
     return {
       startedAt: session.startedAt,
       eloChange: player.elo - session.startElo,
       matches,
       wins,
       losses: matches - wins,
+    };
+  }
+
+  /** Die Match-Historie wird nur neu geladen, wenn seit der letzten Berechnung ein Match dazukam. */
+  private seasonMatchesAt = -1;
+
+  private async updateSeason(player: PlayerSnapshot) {
+    const start = this.state.seasonStart;
+    if (!start) {
+      this.state.season = null;
+      return;
+    }
+    if (this.state.season?.start === start && this.seasonMatchesAt === player.matches) return;
+    const { matches, wins } = await this.source.fetchRecordSince(player.playerId, new Date(start));
+    this.seasonMatchesAt = player.matches;
+    this.state.season = {
+      start,
+      matches,
+      wins,
+      losses: matches - wins,
+      winRate: matches ? Math.round((wins / matches) * 100) : 0,
     };
   }
 
