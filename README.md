@@ -38,6 +38,28 @@ Den Nickname setzt du direkt im Editor (oder als `FACEIT_NICKNAME` in `.env`).
 2. In OBS: **Quelle hinzufügen → Browser**, URL einfügen.
 3. Breite und Höhe so eintragen wie im Editor unter **Design**.
 
+## Docker (z. B. auf einem Heimserver)
+
+```bash
+docker build -t faceitwatcher .
+docker run -d -p 3000:3000 -v ./data:/app/data --env-file .env faceitwatcher
+```
+
+In OBS dann die LAN-Adresse des Servers verwenden, z. B. `http://192.168.0.10:3000/overlay/abcd1234`.
+
+## Schnittstelle für Discord-Bot und andere Clients
+
+Die Faceit-API wird **nur vom Server** abgefragt. Overlay, Editor und Discord-Bot lesen dieselben gespeicherten Daten:
+
+| Endpunkt | Inhalt |
+| --- | --- |
+| `GET /api/state` | aktueller Spieler, Session- und Season-Stats |
+| `GET /api/matches?limit=20` | gespeicherte Matches, neueste zuerst (`MatchResult`, siehe `src/faceit/types.ts`) |
+| `GET /api/history?since=ISO` | Elo-Verlauf |
+| `GET /api/events` | Server-Sent Events: `state`, `overlay`, `match` |
+
+Ein `match`-Event wird erst gesendet, wenn die Elo-Änderung des Matches bekannt ist (spätestens nach drei Abrufen, dann `eloChange: null`). Clients sollten per `matchId` deduplizieren.
+
 ## Aufbau
 
 ```

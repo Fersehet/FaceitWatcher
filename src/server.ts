@@ -23,6 +23,7 @@ function broadcast(event: string, data: unknown) {
   for (const res of clients) res.write(msg);
 }
 tracker.on('state', (state) => broadcast('state', state));
+tracker.on('match', (match) => broadcast('match', match));
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -44,6 +45,12 @@ app.get('/api/events', (req, res) => {
 });
 
 app.get('/api/state', (_req, res) => res.json(tracker.state));
+// Für den Discord-Bot und andere Clients: gespeicherte Matches, neueste zuerst
+app.get('/api/matches', (req, res) => {
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+  res.json(storage.listMatches(tracker.state.player?.playerId ?? null, limit));
+});
+
 app.get('/api/widgets', (_req, res) => res.json(WIDGET_LABELS));
 
 app.put('/api/nickname', async (req, res) => {
@@ -117,7 +124,7 @@ app.delete('/api/overlays/:id', (req, res) => {
   res.status(204).end();
 });
 
-app.listen(config.port, () => {
+app.listen(config.port, config.host, () => {
   console.log(`FaceitWatcher läuft: http://localhost:${config.port}`);
   if (isDemo) console.log('Demo-Modus aktiv (kein FACEIT_API_KEY in .env). Es werden Beispieldaten angezeigt.');
   tracker.start();

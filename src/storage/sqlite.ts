@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import type { PlayerSnapshot } from '../faceit/types.ts';
+import type { MatchResult, PlayerSnapshot } from '../faceit/types.ts';
 import type { Overlay } from '../overlays/types.ts';
 import type { EloPoint, Storage } from './storage.ts';
 
@@ -25,6 +25,13 @@ export class SqliteStorage implements Storage {
         data TEXT NOT NULL
       );
       CREATE INDEX IF NOT EXISTS idx_snapshots_player ON snapshots (player_id, taken_at);
+      CREATE TABLE IF NOT EXISTS matches (
+        match_id TEXT PRIMARY KEY,
+        player_id TEXT NOT NULL,
+        finished_at TEXT NOT NULL,
+        data TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_matches_player ON matches (player_id, finished_at);
       CREATE TABLE IF NOT EXISTS overlays (
         id TEXT PRIMARY KEY,
         owner_id TEXT NOT NULL,
@@ -66,6 +73,25 @@ export class SqliteStorage implements Storage {
     return this.db
       .prepare('SELECT taken_at AS takenAt, elo, matches FROM snapshots WHERE player_id = ? AND taken_at >= ? ORDER BY id')
       .all(playerId, since) as unknown as EloPoint[];
+  }
+
+  hasMatch(matchId: string): boolean {
+    return this.db.prepare('SELECT 1 FROM matches WHERE match_id = ?').get(matchId) !== undefined;
+  }
+
+  saveMatch(m: MatchResult): void {
+    this.db
+      .prepare('INSERT OR REPLACE INTO matches (match_id, player_id, finished_at, data) VALUES (?, ?, ?, ?)')
+      .run(m.matchId, m.playerId, m.finishedAt, JSON.stringify(m));
+  }
+
+  listMatches(playerId: string | null, limit: number): MatchResult[] {
+    const rows = (
+      playerId
+        ? this.db.prepare('SELECT data FROM matches WHERE player_id = ? ORDER BY finished_at DESC LIMIT ?').all(playerId, limit)
+        : this.db.prepare('SELECT data FROM matches ORDER BY finished_at DESC LIMIT ?').all(limit)
+    ) as { data: string }[];
+    return rows.map((r) => JSON.parse(r.data) as MatchResult);
   }
 
   listOverlays(ownerId: string): Overlay[] {

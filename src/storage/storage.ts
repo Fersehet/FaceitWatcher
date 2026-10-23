@@ -1,4 +1,4 @@
-import type { PlayerSnapshot } from '../faceit/types.ts';
+import type { MatchResult, PlayerSnapshot } from '../faceit/types.ts';
 import type { Overlay } from '../overlays/types.ts';
 
 export interface EloPoint {
@@ -20,6 +20,11 @@ export interface Storage {
   saveSnapshot(snapshot: PlayerSnapshot): boolean;
   latestSnapshot(playerId: string): PlayerSnapshot | null;
   eloHistory(playerId: string, since?: string): EloPoint[];
+
+  hasMatch(matchId: string): boolean;
+  saveMatch(match: MatchResult): void;
+  /** Neueste zuerst */
+  listMatches(playerId: string | null, limit: number): MatchResult[];
 
   listOverlays(ownerId: string): Overlay[];
   getOverlay(id: string): Overlay | null;
