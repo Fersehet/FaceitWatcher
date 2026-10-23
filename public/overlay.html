@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <title>FaceitWatcher Overlay</title>
+    <style>
+      html, body { margin: 0; background: transparent; overflow: hidden; }
+    </style>
+  </head>
+  <body>
+    <div id="overlay"></div>
+    <script type="module">
+      import { renderOverlay } from '/js/render.js';
+
+      const id = location.pathname.split('/').pop();
+      const container = document.getElementById('overlay');
+      let overlay = await (await fetch(`/api/overlays/${id}`)).json();
+      let state = await (await fetch('/api/state')).json();
+
+      const draw = () => renderOverlay(container, overlay, state);
+      draw();
+
+      const events = new EventSource('/api/events');
+      events.addEventListener('state', (e) => {
+        state = JSON.parse(e.data);
+        draw();
+      });
+      // Änderungen im Editor erscheinen sofort in OBS
+      events.addEventListener('overlay', (e) => {
+        const updated = JSON.parse(e.data);
+        if (updated.id !== id) return;
+        overlay = updated;
+        draw();
+      });
+    </script>
+  </body>
+</html>
