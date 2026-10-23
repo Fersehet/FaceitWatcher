@@ -23,6 +23,7 @@ export class DemoSource implements StatsSource {
       playerId: 'demo-player',
       nickname: nickname || 'DemoPlayer',
       avatar: '',
+      avatarFrame: '',
       country: 'de',
       elo: this.elo,
       level: levelForElo(this.elo),
@@ -46,6 +47,10 @@ export class DemoSource implements StatsSource {
 
   async fetchRecentMatches(_playerId: string, count: number, isKnown: (matchId: string) => boolean): Promise<MatchDetails[]> {
     return this.played.slice(0, count).filter((m) => !isKnown(m.matchId));
+  }
+
+  async fetchAvatarFrame(): Promise<string> {
+    return '';
   }
 
   private playMatch() {

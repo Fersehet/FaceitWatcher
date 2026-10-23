@@ -3,6 +3,8 @@ export interface PlayerSnapshot {
   playerId: string;
   nickname: string;
   avatar: string;
+  /** Bild-URL des ausgerüsteten Faceit-Avatar-Rahmens, leer = keiner gefunden */
+  avatarFrame: string;
   country: string;
   elo: number;
   level: number;
@@ -29,6 +31,7 @@ export interface MatchResult {
   playerId: string;
   nickname: string;
   avatar: string;
+  avatarFrame: string;
   finishedAt: string;
   result: 'W' | 'L';
   map: string;
@@ -48,7 +51,7 @@ export interface MatchResult {
   url: string;
 }
 
-export type MatchDetails = Omit<MatchResult, 'avatar' | 'eloBefore' | 'eloAfter' | 'eloChange' | 'level'>;
+export type MatchDetails = Omit<MatchResult, 'avatar' | 'avatarFrame' | 'eloBefore' | 'eloAfter' | 'eloChange' | 'level'>;
 
 export interface StatsSource {
   readonly demo: boolean;
@@ -57,6 +60,8 @@ export interface StatsSource {
   fetchRecordSince(playerId: string, since: Date): Promise<MatchRecord>;
   /** Die letzten `count` Matches, neueste zuerst. Details werden nur für Matches geladen, die `isKnown` nicht kennt. */
   fetchRecentMatches(playerId: string, count: number, isKnown: (matchId: string) => boolean): Promise<MatchDetails[]>;
+  /** Bild-URL des Avatar-Rahmens oder '' (nicht Teil der offiziellen Data API, daher Best-Effort). */
+  fetchAvatarFrame(nickname: string): Promise<string>;
 }
 
 /** Faceit CS2 Level-Grenzen (Mindest-Elo pro Level). */

@@ -35,6 +35,25 @@ function el(tag, styles = {}, text) {
   return node;
 }
 
+/** Faceit-Bilder laufen über den lokalen Cache des Servers. */
+export function assetUrl(remote) {
+  return `/assets/remote?url=${encodeURIComponent(remote)}`;
+}
+
+// Level-Symbole, die nicht geladen werden konnten: dann den gezeichneten Kreis verwenden
+const missingLevelIcons = new Set();
+
+function levelBadge(level, size) {
+  return el(
+    'div',
+    {
+      width: `${size * 1.4}px`, height: `${size * 1.4}px`, borderRadius: '50%', display: 'grid', placeItems: 'center',
+      border: `${Math.max(2, size / 8)}px solid ${levelColor(level)}`, color: levelColor(level), fontWeight: 700, background: 'rgba(0,0,0,0.35)',
+    },
+    String(level),
+  );
+}
+
 function signed(n) {
   return n > 0 ? `+${n}` : String(n);
 }
@@ -48,30 +67,41 @@ function widgetContent(widget, style, state) {
 
   switch (widget.type) {
     case 'avatar': {
-      const box = { width: `${size}px`, height: `${size}px`, borderRadius: '50%', border: `2px solid ${style.accentColor}` };
+      const frame = style.showAvatarFrame && p?.avatarFrame ? p.avatarFrame : '';
+      // Mit Faceit-Rahmen übernimmt der Rahmen die Umrandung
+      const box = { width: `${size}px`, height: `${size}px`, borderRadius: '50%', border: frame ? 'none' : `2px solid ${style.accentColor}`, boxSizing: 'border-box' };
+      let avatar;
       if (p?.avatar) {
-        const img = el('img', { ...box, objectFit: 'cover', display: 'block' });
-        img.src = p.avatar;
-        return img;
+        avatar = el('img', { ...box, objectFit: 'cover', display: 'block' });
+        avatar.src = assetUrl(p.avatar);
+      } else {
+        avatar = el(
+          'div',
+          { ...box, background: style.accentColor, display: 'grid', placeItems: 'center', fontSize: `${size * 0.45}px`, fontWeight: 700, color: '#fff' },
+          (p?.nickname ?? '?').charAt(0).toUpperCase(),
+        );
       }
-      return el(
-        'div',
-        { ...box, background: style.accentColor, display: 'grid', placeItems: 'center', fontSize: `${size * 0.45}px`, fontWeight: 700, color: '#fff' },
-        (p?.nickname ?? '?').charAt(0).toUpperCase(),
-      );
+      if (!frame) return avatar;
+      const wrap = el('div', { position: 'relative', width: `${size}px`, height: `${size}px` });
+      const frameImg = el('img', { position: 'absolute', left: '-18%', top: '-18%', width: '136%', height: '136%', pointerEvents: 'none' });
+      frameImg.src = assetUrl(frame);
+      frameImg.onerror = () => frameImg.remove();
+      wrap.append(avatar, frameImg);
+      return wrap;
     }
     case 'nickname':
       return p ? el('div', { fontWeight: 700 }, p.nickname) : null;
     case 'level': {
       if (!p) return null;
-      return el(
-        'div',
-        {
-          width: `${size * 1.4}px`, height: `${size * 1.4}px`, borderRadius: '50%', display: 'grid', placeItems: 'center',
-          border: `${Math.max(2, size / 8)}px solid ${levelColor(p.level)}`, color: levelColor(p.level), fontWeight: 700, background: 'rgba(0,0,0,0.35)',
-        },
-        String(p.level),
-      );
+      if (style.levelIcon === 'badge' || missingLevelIcons.has(p.level)) return levelBadge(p.level, size);
+      const icon = el('img', { width: `${size * 1.6}px`, height: `${size * 1.6}px`, display: 'block' });
+      icon.src = `/assets/level/${p.level}`;
+      icon.alt = `Level ${p.level}`;
+      icon.onerror = () => {
+        missingLevelIcons.add(p.level);
+        icon.replaceWith(levelBadge(p.level, size));
+      };
+      return icon;
     }
     case 'elo':
       return p ? el('div', { fontWeight: 700 }, `${p.elo} ELO`) : null;

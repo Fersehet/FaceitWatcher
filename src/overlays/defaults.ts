@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { Overlay, Widget, WidgetType } from './types.ts';
+import type { Overlay, OverlayStyle, Widget, WidgetType } from './types.ts';
 
 const LABELS: Record<WidgetType, string> = {
   avatar: 'Avatar',
@@ -56,26 +56,33 @@ export function defaultWidgets(): Widget[] {
   }));
 }
 
+export function defaultStyle(): OverlayStyle {
+  return {
+    width: 420,
+    height: 170,
+    background: '#14161a',
+    backgroundOpacity: 0.85,
+    borderRadius: 12,
+    borderColor: '#ff5500',
+    borderWidth: 0,
+    fontFamily: 'Rajdhani',
+    textColor: '#ffffff',
+    labelColor: '#9aa0a6',
+    accentColor: '#ff5500',
+    positiveColor: '#32d74b',
+    negativeColor: '#ff453a',
+    levelIcon: 'official',
+    showAvatarFrame: true,
+  };
+}
+
+
 export function createDefaultOverlay(name = 'Standard'): Overlay {
   return {
     id: randomUUID().slice(0, 8),
     ownerId: 'local',
     name,
-    style: {
-      width: 420,
-      height: 170,
-      background: '#14161a',
-      backgroundOpacity: 0.85,
-      borderRadius: 12,
-      borderColor: '#ff5500',
-      borderWidth: 0,
-      fontFamily: 'Rajdhani',
-      textColor: '#ffffff',
-      labelColor: '#9aa0a6',
-      accentColor: '#ff5500',
-      positiveColor: '#32d74b',
-      negativeColor: '#ff453a',
-    },
+    style: defaultStyle(),
     widgets: defaultWidgets(),
     updatedAt: new Date().toISOString(),
   };
@@ -83,6 +90,7 @@ export function createDefaultOverlay(name = 'Standard'): Overlay {
 
 /** Bringt gespeicherte Overlays auf den Stand neuer Versionen, ohne eigene Anpassungen zu überschreiben. */
 export function upgradeOverlay(overlay: Overlay): Overlay {
+  overlay.style = { ...defaultStyle(), ...overlay.style };
   const known = new Set(overlay.widgets.map((w) => w.type));
   overlay.widgets.push(...defaultWidgets().filter((w) => !known.has(w.type)).map((w) => ({ ...w, enabled: false })));
   // Alte Standardposition der letzten Matches lag über der ADR

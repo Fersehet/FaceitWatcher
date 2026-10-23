@@ -30,6 +30,8 @@ export interface LiveState {
   nickname: string;
   /** Datum (YYYY-MM-DD) des Season-Starts, leer = nicht gesetzt */
   seasonStart: string;
+  /** Eigene Rahmen-URL, überschreibt den von Faceit gelesenen Rahmen */
+  avatarFrameOverride: string;
   player: PlayerSnapshot | null;
   session: SessionStats | null;
   season: SeasonStats | null;
@@ -61,6 +63,7 @@ export class Tracker extends EventEmitter {
       demo: source.demo,
       nickname: storage.getSetting('nickname') ?? defaultNickname,
       seasonStart: storage.getSetting('seasonStart') ?? '',
+      avatarFrameOverride: storage.getSetting('avatarFrameUrl') ?? '',
       player: null,
       session: null,
       season: null,
@@ -95,6 +98,23 @@ export class Tracker extends EventEmitter {
     await this.poll();
   }
 
+  async setAvatarFrameOverride(url: string) {
+    this.state.avatarFrameOverride = url;
+    this.storage.setSetting('avatarFrameUrl', url);
+    await this.poll();
+  }
+
+  /** Der Rahmen ändert sich selten, daher höchstens stündlich bei Faceit nachsehen. */
+  private frame = { nickname: '', url: '', checkedAt: 0 };
+
+  private async avatarFrame(nickname: string): Promise<string> {
+    if (this.state.avatarFrameOverride) return this.state.avatarFrameOverride;
+    if (this.frame.nickname !== nickname || Date.now() - this.frame.checkedAt > 60 * 60 * 1000) {
+      this.frame = { nickname, url: await this.source.fetchAvatarFrame(nickname), checkedAt: Date.now() };
+    }
+    return this.frame.url;
+  }
+
   resetSession() {
     if (this.state.player) {
       this.saveSession(this.newSession(this.state.player));
@@ -111,6 +131,7 @@ export class Tracker extends EventEmitter {
     }
     try {
       const player = await this.source.fetchPlayer(this.state.nickname);
+      player.avatarFrame = await this.avatarFrame(player.nickname);
       const previous = this.storage.latestSnapshot(player.playerId);
       this.storage.saveSnapshot(player);
       await this.recordNewMatches(previous, player);
@@ -160,7 +181,7 @@ export class Tracker extends EventEmitter {
         const isKnown = (id: string) => this.storage.hasMatch(id) || this.pending.some((p) => p.match.matchId === id);
         const fresh = (await this.source.fetchRecentMatches(player.playerId, 5, isKnown)).reverse();
         fresh.forEach((d, i) => {
-          const match: MatchResult = { ...d, avatar: player.avatar, eloBefore: null, eloAfter: null, eloChange: null, level: player.level };
+          const match: MatchResult = { ...d, avatar: player.avatar, avatarFrame: player.avatarFrame, eloBefore: null, eloAfter: null, eloChange: null, level: player.level };
           if (!previous || i < fresh.length - 1) {
             // Erster Start oder ältere von mehreren neuen Matches: Elo nicht zuordenbar
             this.publish(match, !!previous);

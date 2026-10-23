@@ -46,6 +46,7 @@ export class FaceitClient implements StatsSource {
       playerId: player.player_id,
       nickname: player.nickname,
       avatar: player.avatar ?? '',
+      avatarFrame: '',
       country: player.country ?? '',
       elo: num(game.faceit_elo) ?? 0,
       level: num(game.skill_level) ?? 1,
@@ -120,4 +121,32 @@ export class FaceitClient implements StatsSource {
     }
     return results;
   }
+
+  /**
+   * Die offizielle Data API liefert keine Kosmetik. Die Faceit-Webseite lädt Profile über eine
+   * interne Schnittstelle, in deren Antwort wir nach einem Bild suchen, dessen Schlüssel "frame" enthält.
+   * Ändert Faceit diese Schnittstelle, gibt es einfach keinen Rahmen.
+   */
+  async fetchAvatarFrame(nickname: string): Promise<string> {
+    try {
+      const res = await fetch(`https://www.faceit.com/api/users/v1/nicknames/${encodeURIComponent(nickname)}`, {
+        headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0 FaceitWatcher' },
+      });
+      if (!res.ok) return '';
+      return findFrameUrl(await res.json()) ?? '';
+    } catch {
+      return '';
+    }
+  }
+}
+
+function findFrameUrl(value: unknown, insideFrame = false, depth = 0): string | null {
+  if (depth > 8 || value === null || typeof value !== 'object') return null;
+  for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
+    const frameKey = insideFrame || /frame/i.test(key);
+    if (frameKey && typeof v === 'string' && /^https:\/\/.+\.(png|webp|gif|svg|apng)(\?.*)?$/i.test(v)) return v;
+    const nested = findFrameUrl(v, frameKey, depth + 1);
+    if (nested) return nested;
+  }
+  return null;
 }

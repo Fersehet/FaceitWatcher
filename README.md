@@ -58,7 +58,16 @@ Die Faceit-API wird **nur vom Server** abgefragt. Overlay, Editor und Discord-Bo
 | `GET /api/history?since=ISO` | Elo-Verlauf |
 | `GET /api/events` | Server-Sent Events: `state`, `overlay`, `match` |
 
+| `GET /assets/level/1` … `/10` | offizielles Faceit-Level-Symbol (lokal zwischengespeichert) |
+| `GET /assets/remote?url=…` | Faceit-Bild (Avatar, Avatar-Rahmen) aus dem lokalen Cache |
+
 Ein `match`-Event wird erst gesendet, wenn die Elo-Änderung des Matches bekannt ist (spätestens nach drei Abrufen, dann `eloChange: null`). Clients sollten per `matchId` deduplizieren.
+
+## Faceit-Symbole und Avatar-Rahmen
+
+- Die **Level-Symbole** lädt der Server einmal von Faceits CDN und speichert sie unter `data/assets/`. Ändert Faceit die Adresse, kann sie mit `LEVEL_ICON_URL` (Platzhalter `{level}`) angepasst werden. Wenn ein Symbol nicht geladen werden kann, zeigt das Overlay den gezeichneten Kreis. Die Auswahl findest du im Editor unter **Design → Level-Symbol**.
+- Den **Avatar-Rahmen** liefert die offizielle Data API nicht. Der Server liest ihn deshalb stündlich aus Faceits Profil-Schnittstelle der Webseite. Diese ist inoffiziell und kann sich ändern. Findet er keinen Rahmen, kannst du im Editor unter „Spieler“ selbst eine Bild-Adresse eintragen.
+- **Nutzungsrechte**: Symbole, Rahmen und Logos gehören FACEIT. Sie werden deshalb nicht im Repo mitgeliefert, sondern nur lokal für dein eigenes Overlay zwischengespeichert. Für ein öffentliches Produkt (z. B. die spätere Web-App) bitte vorher die Erlaubnis von FACEIT einholen.
 
 ## Aufbau
 
