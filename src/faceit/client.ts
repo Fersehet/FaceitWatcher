@@ -1,4 +1,4 @@
-import type { PlayerSnapshot, StatsSource } from './types.ts';
+import type { MatchRecord, PlayerSnapshot, StatsSource } from './types.ts';
 
 const BASE_URL = 'https://open.faceit.com/data/v4';
 const GAME = 'cs2';
@@ -60,5 +60,31 @@ export class FaceitClient implements StatsSource {
       recentResults: recent.map((r) => (String(r) === '1' ? 'W' : 'L')),
       fetchedAt: new Date().toISOString(),
     };
+  }
+
+  async fetchRecordSince(playerId: string, since: Date): Promise<MatchRecord> {
+    const from = Math.floor(since.getTime() / 1000);
+    const pageSize = 100;
+    let matches = 0;
+    let wins = 0;
+    // Höchstens 20 Seiten (2000 Matches), damit das Rate-Limit nicht gesprengt wird
+    for (let offset = 0; offset < 2000; offset += pageSize) {
+      const page = await this.get<any>(
+        `/players/${playerId}/history?game=${GAME}&from=${from}&offset=${offset}&limit=${pageSize}`,
+      );
+      const items: any[] = page.items ?? [];
+      for (const m of items) {
+        if (m.status && String(m.status).toUpperCase() !== 'FINISHED') continue;
+        const winner = m.results?.winner;
+        const team = Object.entries(m.teams ?? {}).find(([, t]: [string, any]) =>
+          (t.players ?? []).some((p: any) => p.player_id === playerId),
+        )?.[0];
+        if (!winner || !team) continue;
+        matches += 1;
+        if (team === winner) wins += 1;
+      }
+      if (items.length < pageSize) break;
+    }
+    return { matches, wins };
   }
 }

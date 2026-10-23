@@ -105,6 +105,8 @@ function widgetContent(widget, style, state) {
       return p ? el('div', { fontWeight: 600 }, String(p.matches)) : null;
     case 'winRate':
       return p ? el('div', { fontWeight: 600 }, `${p.winRate}%`) : null;
+    case 'seasonWinRate':
+      return state?.season ? el('div', { fontWeight: 600 }, `${state.season.winRate}%`) : null;
     case 'kd':
       return p ? el('div', { fontWeight: 600 }, p.kd.toFixed(2)) : null;
     case 'hsPercent':
