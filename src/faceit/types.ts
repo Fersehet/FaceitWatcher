@@ -23,11 +23,40 @@ export interface MatchRecord {
   wins: number;
 }
 
+/** Ein abgeschlossenes Match aus Sicht des getrackten Spielers. Wird gespeichert und an Overlay und Discord-Bot verteilt. */
+export interface MatchResult {
+  matchId: string;
+  playerId: string;
+  nickname: string;
+  avatar: string;
+  finishedAt: string;
+  result: 'W' | 'L';
+  map: string;
+  score: string;
+  kills: number;
+  deaths: number;
+  assists: number;
+  kd: number;
+  adr: number | null;
+  hsPercent: number;
+  mvps: number | null;
+  /** Elo-Werte sind nur beim neuesten Match eines Abrufs bekannt, sonst null. */
+  eloBefore: number | null;
+  eloAfter: number | null;
+  eloChange: number | null;
+  level: number;
+  url: string;
+}
+
+export type MatchDetails = Omit<MatchResult, 'avatar' | 'eloBefore' | 'eloAfter' | 'eloChange' | 'level'>;
+
 export interface StatsSource {
   readonly demo: boolean;
   fetchPlayer(nickname: string): Promise<PlayerSnapshot>;
   /** Siege und Matches seit einem Zeitpunkt (z. B. Season-Start). */
   fetchRecordSince(playerId: string, since: Date): Promise<MatchRecord>;
+  /** Die letzten `count` Matches, neueste zuerst. Details werden nur für Matches geladen, die `isKnown` nicht kennt. */
+  fetchRecentMatches(playerId: string, count: number, isKnown: (matchId: string) => boolean): Promise<MatchDetails[]>;
 }
 
 /** Faceit CS2 Level-Grenzen (Mindest-Elo pro Level). */

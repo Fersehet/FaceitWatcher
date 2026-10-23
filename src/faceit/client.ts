@@ -1,4 +1,4 @@
-import type { MatchRecord, PlayerSnapshot, StatsSource } from './types.ts';
+import type { MatchDetails, MatchRecord, PlayerSnapshot, StatsSource } from './types.ts';
 
 const BASE_URL = 'https://open.faceit.com/data/v4';
 const GAME = 'cs2';
@@ -86,5 +86,38 @@ export class FaceitClient implements StatsSource {
       if (items.length < pageSize) break;
     }
     return { matches, wins };
+  }
+
+  async fetchRecentMatches(playerId: string, count: number, isKnown: (matchId: string) => boolean): Promise<MatchDetails[]> {
+    const history = await this.get<any>(`/players/${playerId}/history?game=${GAME}&offset=0&limit=${count}`);
+    const results: MatchDetails[] = [];
+    for (const m of history.items ?? []) {
+      if (m.status && String(m.status).toUpperCase() !== 'FINISHED') continue;
+      if (isKnown(m.match_id)) continue;
+      const stats = await this.get<any>(`/matches/${m.match_id}/stats`);
+      const round = stats.rounds?.[0];
+      const players = (round?.teams ?? []).flatMap((t: any) => t.players ?? []);
+      const me = players.find((p: any) => p.player_id === playerId);
+      if (!round || !me) continue;
+      const s = me.player_stats ?? {};
+      results.push({
+        matchId: m.match_id,
+        playerId,
+        nickname: me.nickname,
+        finishedAt: new Date((num(m.finished_at) ?? Date.now() / 1000) * 1000).toISOString(),
+        result: String(s['Result']) === '1' ? 'W' : 'L',
+        map: String(round.round_stats?.Map ?? ''),
+        score: String(round.round_stats?.Score ?? ''),
+        kills: num(s['Kills']) ?? 0,
+        deaths: num(s['Deaths']) ?? 0,
+        assists: num(s['Assists']) ?? 0,
+        kd: num(s['K/D Ratio']) ?? 0,
+        adr: num(s['ADR']),
+        hsPercent: num(s['Headshots %']) ?? 0,
+        mvps: num(s['MVPs']),
+        url: String(m.faceit_url ?? '').replace('{lang}', 'de'),
+      });
+    }
+    return results;
   }
 }

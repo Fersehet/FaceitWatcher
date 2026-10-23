@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import type { PlayerSnapshot, StatsSource } from './faceit/types.ts';
+import type { MatchResult, PlayerSnapshot, StatsSource } from './faceit/types.ts';
 import type { Storage } from './storage/storage.ts';
 
 export interface Session {
@@ -39,6 +39,9 @@ export interface LiveState {
 
 /** Eine Session gilt als beendet, wenn sie älter als 12 Stunden ist (z. B. am nächsten Tag). */
 const SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
+
+/** So viele Abrufe wird auf die Elo-Änderung eines neuen Matches gewartet. */
+const ELO_WAIT_POLLS = 3;
 
 /** Fragt Faceit regelmäßig ab, speichert neue Stände und verteilt den Live-Zustand an alle Overlays. */
 export class Tracker extends EventEmitter {
@@ -108,7 +111,9 @@ export class Tracker extends EventEmitter {
     }
     try {
       const player = await this.source.fetchPlayer(this.state.nickname);
+      const previous = this.storage.latestSnapshot(player.playerId);
       this.storage.saveSnapshot(player);
+      await this.recordNewMatches(previous, player);
       this.state.player = player;
       this.state.session = this.sessionStats(player);
       await this.updateSeason(player);
@@ -138,6 +143,61 @@ export class Tracker extends EventEmitter {
       wins,
       losses: matches - wins,
     };
+  }
+
+  /** Neue Matches, deren Elo-Änderung Faceit noch nicht geliefert hat. */
+  private pending: { match: MatchResult; polls: number }[] = [];
+
+  /**
+   * Erkennt neue Matches, speichert sie und meldet sie per "match"-Event (Overlay, Discord-Bot).
+   * Gemeldet wird erst, wenn die Elo-Änderung bekannt ist, spätestens nach ELO_WAIT_POLLS Abrufen (dann eloChange = null).
+   * Beim allerersten Abruf werden die letzten Matches nur still gespeichert.
+   */
+  private async recordNewMatches(previous: PlayerSnapshot | null, player: PlayerSnapshot) {
+    const changed = !previous || previous.matches !== player.matches || previous.elo !== player.elo;
+    try {
+      if (changed || this.pending.length) {
+        const isKnown = (id: string) => this.storage.hasMatch(id) || this.pending.some((p) => p.match.matchId === id);
+        const fresh = (await this.source.fetchRecentMatches(player.playerId, 5, isKnown)).reverse();
+        fresh.forEach((d, i) => {
+          const match: MatchResult = { ...d, avatar: player.avatar, eloBefore: null, eloAfter: null, eloChange: null, level: player.level };
+          if (!previous || i < fresh.length - 1) {
+            // Erster Start oder ältere von mehreren neuen Matches: Elo nicht zuordenbar
+            this.publish(match, !!previous);
+          } else {
+            match.eloBefore = this.eloBefore(player.playerId, match.finishedAt) ?? previous.elo;
+            this.pending.push({ match, polls: 0 });
+          }
+        });
+      }
+    } catch (err) {
+      console.error('Match-Details konnten nicht geladen werden:', err instanceof Error ? err.message : err);
+    }
+
+    for (const p of [...this.pending]) {
+      const known = p.match.eloBefore !== null && player.elo !== p.match.eloBefore;
+      p.polls += 1;
+      if (!known && p.polls < ELO_WAIT_POLLS) continue;
+      if (known) {
+        p.match.eloAfter = player.elo;
+        p.match.eloChange = player.elo - p.match.eloBefore!;
+      } else {
+        p.match.eloBefore = null;
+      }
+      p.match.level = player.level;
+      this.pending = this.pending.filter((x) => x !== p);
+      this.publish(p.match, true);
+    }
+  }
+
+  private eloBefore(playerId: string, finishedAt: string): number | null {
+    const before = this.storage.eloHistory(playerId).filter((h) => h.takenAt < finishedAt);
+    return before.length ? before[before.length - 1].elo : null;
+  }
+
+  private publish(match: MatchResult, announce: boolean) {
+    this.storage.saveMatch(match);
+    if (announce) this.emit('match', match);
   }
 
   /** Die Match-Historie wird nur neu geladen, wenn seit der letzten Berechnung ein Match dazukam. */
