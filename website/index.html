@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FaceitWatcher Overlay</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="FaceitWatcher: Dein eigenes Faceit Elo- und Profil-Overlay für OBS. Jede Statistik einzeln schaltbar, frei gestaltbar, Verlauf lokal gespeichert.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: dark broadcast studio. Hero = live overlay editor on a faux game scene; below, alternating feature rows, a real 3-step OBS setup, FAQ, CTA. */
+:root {
+  color-scheme: dark;
+  --bg: #0d1017;
+  --bg-2: #131823;
+  --surface: #1a2130;
+  --line: #2a3346;
+  --fg: #e9edf5;
+  --muted: #9aa5ba;
+  --accent: #ffb23f;
+  --accent-ink: #1b1204;
+  --up: #46d3b0;
+  --down: #ff6b6b;
+  --f-display: "Chakra Petch", "Rajdhani", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Barlow", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --gutter-l: max(16px, env(safe-area-inset-left, 0px));
+  --gutter-r: max(16px, env(safe-area-inset-right, 0px));
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation: none !important; transition: none !important; } }
+body { background: var(--bg); color: var(--fg); font: 400 17px/1.6 var(--f-body); }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.wrap { max-width: 1160px; margin: 0 auto; padding-left: var(--gutter-l); padding-right: var(--gutter-r); }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 700; line-height: 1.1; text-wrap: balance; margin: 0; letter-spacing: .01em; }
+h2 { font-size: clamp(28px, 4vw, 42px); }
+h3 { font-size: 21px; font-weight: 600; }
+p { margin: 0; }
+.eyebrow { font: 600 13px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+.lead { color: var(--muted); font-size: 19px; max-width: 60ch; }
+
+/* Nav */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 9; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; font: 700 19px/1 var(--f-display); text-decoration: none; }
+.brand-mark { width: 26px; height: 26px; border-radius: 6px; background: var(--accent); display: grid; place-items: center; color: var(--accent-ink); font: 700 14px/1 var(--f-mono); }
+.nav-links { display: flex; gap: 22px; align-items: center; font-weight: 500; }
+.nav-links a { text-decoration: none; color: var(--muted); }
+.nav-links a:hover { color: var(--fg); }
+@media (max-width: 720px) { .nav-links a:not(.btn) { display: none; } }
+
+.btn { display: inline-flex; align-items: center; gap: 8px; font: 600 15px/1 var(--f-display); letter-spacing: .04em; text-transform: uppercase; text-decoration: none; padding: 13px 20px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.06); }
+.nav .btn { padding: 10px 14px; font-size: 13px; }
+
+/* Hero */
+.hero { padding-block: 64px 48px; }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 48px; align-items: center; }
+@media (max-width: 960px) { .hero-grid { grid-template-columns: minmax(0, 1fr); gap: 36px; } }
+.hero h1 { font-size: clamp(38px, 5.6vw, 64px); margin-block: 18px 20px; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+.status { display: inline-flex; align-items: center; gap: 8px; font: 500 13px/1 var(--f-mono); color: var(--muted); border: 1px solid var(--line); padding: 7px 10px; border-radius: 999px; }
+.status i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); }
+
+/* Demo */
+.demo { background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; min-width: 0; }
+.demo-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--line); font: 500 12px/1 var(--f-mono); color: var(--muted); }
+.demo-bar .dots { display: flex; gap: 6px; }
+.demo-bar .dots span { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+.rec { color: var(--down); display: inline-flex; gap: 6px; align-items: center; }
+.rec::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--down); animation: blink 1.6s infinite; }
+@keyframes blink { 50% { opacity: .25; } }
+.scene { position: relative; aspect-ratio: 16 / 9; max-width: 100%; overflow: hidden; display: flex; padding: 4%; transition: background .3s; }
+.scene.game { background:
+  radial-gradient(120% 70% at 70% 110%, #3d2c1f 0%, transparent 60%),
+  radial-gradient(60% 50% at 20% 30%, #6b7f8f55 0%, transparent 70%),
+  linear-gradient(180deg, #8ea3b3 0%, #b9a98a 42%, #6d5a43 43%, #3c3127 100%); }
+.scene.game::after { content: ""; position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; transform: translate(-50%, -50%);
+  background: linear-gradient(#5dff9c, #5dff9c) center/2px 100% no-repeat, linear-gradient(#5dff9c, #5dff9c) center/100% 2px no-repeat; opacity: .9; }
+.scene.alpha { background: repeating-conic-gradient(#2b3140 0 25%, #222836 0 50%) 0 0 / 22px 22px; }
+.scene.pos-tl { align-items: flex-start; justify-content: flex-start; }
+.scene.pos-tr { align-items: flex-start; justify-content: flex-end; }
+.scene.pos-bl { align-items: flex-end; justify-content: flex-start; }
+.scene.pos-br { align-items: flex-end; justify-content: flex-end; }
+.scene-label { position: absolute; right: 10px; bottom: 8px; font: 500 11px/1 var(--f-mono); color: #ffffffb0; background: #00000066; padding: 5px 7px; border-radius: 4px; z-index: 2; }
+
+/* The overlay widget itself */
+.ov { --ov-accent: var(--accent); position: relative; z-index: 1; display: flex; gap: 10px; align-items: stretch; padding: 10px; border-radius: 10px; background: rgba(10, 12, 18, .78); color: #f3f5fa; font-family: var(--ov-font, var(--f-display)); box-shadow: 0 8px 30px rgba(0,0,0,.35); max-width: 100%; font-size: clamp(10px, 1.45vw, 15px); transition: border-color .2s; border: 1px solid color-mix(in srgb, var(--ov-accent) 45%, transparent); }
+.ov.vertical { flex-direction: column; }
+.ov [data-stat][hidden] { display: none !important; }
+.lvl { width: 3.1em; aspect-ratio: 1; flex: none; border-radius: 50%; display: grid; place-items: center; font: 700 1.35em/1 var(--f-mono); color: var(--ov-accent);
+  background: conic-gradient(var(--ov-accent) 0 var(--lvl-pct, 70%), #ffffff22 0); position: relative; }
+.lvl::before { content: ""; position: absolute; inset: .22em; border-radius: 50%; background: #0c0f16; }
+.lvl span { position: relative; }
+.ov.vertical .lvl { align-self: flex-start; }
+.ov-main { display: flex; flex-direction: column; justify-content: center; gap: .15em; min-width: 0; }
+.ov-name { font-weight: 600; font-size: .85em; color: #c8cfdd; letter-spacing: .03em; }
+.ov-elo { font: 700 1.9em/1 var(--f-mono); display: flex; align-items: baseline; gap: .35em; }
+.ov-elo small { font-size: .42em; color: #9aa5ba; letter-spacing: .1em; }
+.ov-cells { display: flex; gap: .4em; flex-wrap: wrap; align-items: stretch; }
+.cell { background: #ffffff10; border-radius: 6px; padding: .45em .65em; display: flex; flex-direction: column; justify-content: center; gap: .2em; }
+.cell b { font: 700 1.1em/1 var(--f-mono); font-variant-numeric: tabular-nums; }
+.cell span { font-size: .62em; letter-spacing: .12em; text-transform: uppercase; color: #9aa5ba; }
+.up { color: var(--up); } .down { color: var(--down); }
+.form { display: flex; gap: .2em; }
+.form i { width: 1.25em; height: 1.25em; border-radius: 3px; display: grid; place-items: center; font: 700 .7em/1 var(--f-mono); font-style: normal; }
+.form .w { background: color-mix(in srgb, var(--up) 30%, transparent); color: var(--up); }
+.form .l { background: color-mix(in srgb, var(--down) 30%, transparent); color: var(--down); }
+
+/* Controls */
+.controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px 24px; padding: 18px; border-top: 1px solid var(--line); }
+@media (max-width: 560px) { .controls { grid-template-columns: minmax(0, 1fr); } }
+.ctl-title { font: 600 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 500 13px/1 var(--f-body); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.chip[aria-pressed="true"] { color: var(--fg); border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.chip[aria-pressed="true"]::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+.sw { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; background: var(--c); box-shadow: inset 0 0 0 2px var(--bg-2); }
+.sw[aria-pressed="true"] { border-color: var(--fg); }
+.demo-note { font-size: 13px; color: var(--muted); padding: 0 18px 16px; }
+
+/* Sections */
+section { padding-block: 72px; }
+.sec-head { display: grid; gap: 14px; margin-bottom: 40px; max-width: 720px; }
+.band { background: var(--bg-2); border-block: 1px solid var(--line); }
+
+.features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+@media (max-width: 900px) { .features { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .features { grid-template-columns: minmax(0, 1fr); } }
+.feat { background: var(--bg); padding: 28px 26px; display: flex; flex-direction: column; gap: 10px; }
+.feat p { color: var(--muted); }
+.feat .tag { font: 500 12px/1 var(--f-mono); color: var(--accent); }
+
+/* Stats */
+.stats-grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 32px; align-items: start; }
+@media (max-width: 900px) { .stats-grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 22px; min-width: 0; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.panel-head b { font: 700 28px/1 var(--f-mono); }
+.panel-head span { font: 500 12px/1 var(--f-mono); color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+.chart { width: 100%; height: auto; display: block; }
+.chart text { fill: var(--muted); font: 500 11px var(--f-mono); }
+.session { display: grid; gap: 1px; background: var(--line); border-radius: 10px; overflow: hidden; border: 1px solid var(--line); }
+.session div { background: var(--surface); padding: 14px 18px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.session dt, .session span { color: var(--muted); }
+.session b { font: 700 20px/1 var(--f-mono); font-variant-numeric: tabular-nums; }
+.example { font: 500 12px/1.4 var(--f-mono); color: var(--muted); margin-top: 12px; }
+
+.levels { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px; margin-top: 28px; }
+@media (max-width: 600px) { .levels { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.levels div { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 10px 6px; text-align: center; }
+.levels b { display: block; font: 700 18px/1 var(--f-mono); color: var(--lc); }
+.levels span { font: 500 11px/1.3 var(--f-mono); color: var(--muted); }
+
+/* Steps */
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; counter-reset: s; }
+@media (max-width: 860px) { .steps { grid-template-columns: minmax(0, 1fr); } }
+.step { counter-increment: s; border-top: 2px solid var(--accent); padding-top: 18px; display: grid; gap: 10px; align-content: start; }
+.step::before { content: "Schritt " counter(s); font: 600 12px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+.step p { color: var(--muted); }
+code, .url { font: 500 14px/1.5 var(--f-mono); background: var(--surface); border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px; overflow-wrap: anywhere; }
+.copyrow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.copybtn { font: 600 12px/1 var(--f-mono); padding: 8px 10px; border-radius: 5px; border: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; }
+
+/* FAQ */
+.faq { display: grid; gap: 10px; max-width: 820px; }
+details { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 0 20px; }
+summary { cursor: pointer; padding-block: 18px; font: 600 18px/1.3 var(--f-display); list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; font-family: var(--f-mono); color: var(--accent); }
+details[open] summary::after { content: "–"; }
+details p { color: var(--muted); padding-bottom: 18px; max-width: 65ch; }
+
+/* CTA */
+.cta { text-align: left; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 36px; }
+@media (max-width: 720px) { .cta { grid-template-columns: minmax(0, 1fr); padding: 26px; } }
+.cta p { color: var(--muted); margin-top: 10px; }
+footer { border-top: 1px solid var(--line); padding-block: 28px; color: var(--muted); font-size: 14px; }
+footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<nav class="nav" aria-label="Hauptnavigation">
+  <div class="wrap">
+    <a class="brand" href="#top"><span class="brand-mark">FW</span>FaceitWatcher</a>
+    <div class="nav-links">
+      <a href="#features">Funktionen</a>
+      <a href="#stats">Statistiken</a>
+      <a href="#setup">Einrichtung</a>
+      <a href="#faq">FAQ</a>
+      <a class="btn primary" href="https://github.com/fersehet/faceitwatcher" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="status"><i></i>In Entwicklung · Open Source</span>
+      <h1>Dein Faceit-Elo live im Stream. <em>Genau so, wie du es willst.</em></h1>
+      <p class="lead">FaceitWatcher baut dir ein Elo- und Profil-Overlay für OBS. Du entscheidest, welche Werte zu sehen sind, wo sie sitzen und wie sie aussehen. Dein Match-Verlauf wird nebenbei lokal gespeichert.</p>
+      <div class="actions">
+        <a class="btn primary" href="#setup">So kommt es in OBS</a>
+        <a class="btn" href="https://github.com/fersehet/faceitwatcher" target="_blank" rel="noopener">Code auf GitHub</a>
+      </div>
+    </div>
+
+    <div class="demo" aria-label="Interaktive Vorschau des Overlays">
+      <div class="demo-bar">
+        <span class="dots"><span></span><span></span><span></span></span>
+        <span>Overlay-Editor · Vorschau</span>
+        <span class="rec">LIVE</span>
+      </div>
+      <div class="scene game pos-tl" id="scene">
+        <div class="ov" id="ov">
+          <div class="lvl" data-stat="level" style="--lvl-pct: 62%"><span>8</span></div>
+          <div class="ov-main">
+            <div class="ov-name" data-stat="name">s1mpleFan_92</div>
+            <div class="ov-elo" data-stat="elo">1.684<small>ELO</small></div>
+          </div>
+          <div class="ov-cells">
+            <div class="cell" data-stat="today"><b class="up">+25</b><span>Elo heute</span></div>
+            <div class="cell" data-stat="session"><b>4–2</b><span>Heute W/L</span></div>
+            <div class="cell" data-stat="kd"><b>1,24</b><span>K/D</span></div>
+            <div class="cell" data-stat="winrate" hidden><b>54 %</b><span>Winrate</span></div>
+            <div class="cell" data-stat="hs" hidden><b>48 %</b><span>HS-Quote</span></div>
+            <div class="cell" data-stat="form"><span class="form"><i class="w">W</i><i class="w">W</i><i class="l">L</i><i class="w">W</i><i class="l">L</i></span><span>Letzte 5</span></div>
+          </div>
+        </div>
+        <span class="scene-label" id="sceneLabel">OBS-Szene · 1920×1080</span>
+      </div>
+      <div class="controls">
+        <div>
+          <div class="ctl-title">Werte ein/aus</div>
+          <div class="chips" id="statChips">
+            <button class="chip" type="button" id="t-level" data-toggle="level" aria-pressed="true">Level</button>
+            <button class="chip" type="button" id="t-name" data-toggle="name" aria-pressed="true">Name</button>
+            <button class="chip" type="button" id="t-elo" data-toggle="elo" aria-pressed="true">Elo</button>
+            <button class="chip" type="button" id="t-today" data-toggle="today" aria-pressed="true">Elo heute</button>
+            <button class="chip" type="button" id="t-session" data-toggle="session" aria-pressed="true">W/L heute</button>
+            <button class="chip" type="button" id="t-kd" data-toggle="kd" aria-pressed="true">K/D</button>
+            <button class="chip" type="button" id="t-winrate" data-toggle="winrate" aria-pressed="false">Winrate</button>
+            <button class="chip" type="button" id="t-hs" data-toggle="hs" aria-pressed="false">HS-Quote</button>
+            <button class="chip" type="button" id="t-form" data-toggle="form" aria-pressed="true">Letzte 5</button>
+          </div>
+        </div>
+        <div style="display:grid; gap:18px;">
+          <div>
+            <div class="ctl-title">Akzentfarbe</div>
+            <div class="swatches" id="swatches">
+              <button class="sw" type="button" id="c-amber" style="--c:#ffb23f" data-color="#ffb23f" aria-label="Bernstein" aria-pressed="true"></button>
+              <button class="sw" type="button" id="c-cyan" style="--c:#4cc9f0" data-color="#4cc9f0" aria-label="Cyan" aria-pressed="false"></button>
+              <button class="sw" type="button" id="c-pink" style="--c:#ff5d9e" data-color="#ff5d9e" aria-label="Pink" aria-pressed="false"></button>
+              <button class="sw" type="button" id="c-lime" style="--c:#a3e635" data-color="#a3e635" aria-label="Limette" aria-pressed="false"></button>
+              <button class="sw" type="button" id="c-white" style="--c:#f3f5fa" data-color="#f3f5fa" aria-label="Weiß" aria-pressed="false"></button>
+            </div>
+          </div>
+          <div>
+            <div class="ctl-title">Layout &amp; Hintergrund</div>
+            <div class="chips">
+              <button class="chip" type="button" id="l-vertical" aria-pressed="false">Vertikal</button>
+              <button class="chip" type="button" id="l-pos" aria-pressed="false">Ecke: oben links</button>
+              <button class="chip" type="button" id="l-alpha" aria-pressed="false">Transparent zeigen</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="demo-note">Probier es aus. Alle Werte hier sind Beispieldaten.</p>
+    </div>
+  </div>
+</header>
+
+<section id="features" class="band">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Funktionen</span>
+      <h2>Ein Overlay, das zu deinem Stream passt</h2>
+      <p class="lead">Keine fertige Vorlage, die bei jedem gleich aussieht. Du baust dein Overlay im Browser und siehst jede Änderung sofort.</p>
+    </div>
+    <div class="features">
+      <article class="feat"><span class="tag">Schalter</span><h3>Jede Statistik einzeln</h3><p>Elo, Level, K/D, Winrate, HS-Quote, letzte Matches. Jeder Wert lässt sich ein- und ausblenden. Was du nicht zeigen willst, bleibt weg.</p></article>
+      <article class="feat"><span class="tag">Editor</span><h3>Live-Vorschau im Browser</h3><p>Farben, Schriften, Abstände und Anordnung stellst du im Editor ein. Die Vorschau zeigt dir direkt, wie es in OBS aussieht.</p></article>
+      <article class="feat"><span class="tag">OBS</span><h3>Browserquelle mit transparentem Hintergrund</h3><p>Eine URL kopieren, in OBS als Browserquelle einfügen, fertig. Das Overlay liegt sauber über deinem Gameplay.</p></article>
+      <article class="feat"><span class="tag">Session</span><h3>Elo heute +25</h3><p>Zeigt, wie dein Tag läuft: Elo-Plus oder -Minus seit Streamstart, Siege und Niederlagen der Session, aktuelle Serie.</p></article>
+      <article class="feat"><span class="tag">Verlauf</span><h3>Deine Daten bleiben bei dir</h3><p>Jedes Match landet in einer lokalen Datenbank auf deinem Rechner. So siehst du deinen Elo-Verlauf über Wochen und Monate.</p></article>
+      <article class="feat"><span class="tag">Live</span><h3>Aktualisiert sich selbst</h3><p>Nach jedem Match holt FaceitWatcher die neuen Werte über die offizielle Faceit-API. Du musst im Stream nichts anfassen.</p></article>
+    </div>
+  </div>
+</section>
+
+<section id="stats">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Statistiken</span>
+      <h2>Mehr als die Zahl im Overlay</h2>
+      <p class="lead">FaceitWatcher merkt sich jedes Match. Daraus entstehen Verlauf, Tagesbilanz und Trends, die Faceit selbst so nicht zeigt.</p>
+    </div>
+    <div class="stats-grid">
+      <div class="panel">
+        <div class="panel-head"><div><span>Elo-Verlauf · letzte 20 Matches</span></div><b>1.684 <small class="up" style="font-size:14px">+112</small></b></div>
+        <svg class="chart" viewBox="0 0 600 220" role="img" aria-label="Beispiel: Elo steigt über 20 Matches von 1572 auf 1684">
+          <defs><linearGradient id="fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".35"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+          <g id="grid"></g>
+          <path id="area" fill="url(#fill)"></path>
+          <path id="line" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"></path>
+          <g id="dots"></g>
+        </svg>
+        <p class="example">Beispieldaten. Die gestrichelte Linie markiert die Grenze zu Level 9 (1.751 Elo).</p>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span>Heutige Session</span><span class="up">● live</span></div>
+        <dl class="session" style="margin:0">
+          <div><dt>Elo heute</dt><b class="up">+25</b></div>
+          <div><dt>Matches</dt><b>6</b></div>
+          <div><dt>Siege / Niederlagen</dt><b>4 – 2</b></div>
+          <div><dt>K/D heute</dt><b>1,31</b></div>
+          <div><dt>Beste Map</dt><b>Ancient</b></div>
+          <div><dt>Bis Level 9</dt><b>67 Elo</b></div>
+        </dl>
+        <p class="example">Beispieldaten.</p>
+      </div>
+    </div>
+    <div class="levels" aria-label="Faceit Level und Elo-Grenzen">
+      <div style="--lc:#b8c1d1"><b>1</b><span>100–500</span></div>
+      <div style="--lc:#46d3b0"><b>2</b><span>501–750</span></div>
+      <div style="--lc:#46d3b0"><b>3</b><span>751–900</span></div>
+      <div style="--lc:#ffd84d"><b>4</b><span>901–1050</span></div>
+      <div style="--lc:#ffd84d"><b>5</b><span>1051–1200</span></div>
+      <div style="--lc:#ffd84d"><b>6</b><span>1201–1350</span></div>
+      <div style="--lc:#ffd84d"><b>7</b><span>1351–1530</span></div>
+      <div style="--lc:#ff9a3d"><b>8</b><span>1531–1750</span></div>
+      <div style="--lc:#ff9a3d"><b>9</b><span>1751–2000</span></div>
+      <div style="--lc:#ff6b6b"><b>10</b><span>2001+</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="setup" class="band">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Einrichtung</span>
+      <h2>In drei Schritten in OBS</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><h3>Starten und verbinden</h3><p>FaceitWatcher auf deinem PC starten und den Editor unter <code>http://localhost:3000</code> öffnen. Faceit-Nickname eintragen und deinen kostenlosen API-Key von developers.faceit.com einfügen.</p></div>
+      <div class="step"><h3>Overlay gestalten</h3><p>Im Editor die gewünschten Werte einschalten, Farben und Schrift wählen und das Layout anordnen. Die Vorschau zeigt alles live.</p></div>
+      <div class="step"><h3>Als Browserquelle einfügen</h3><p>Im Editor bei „In OBS einbinden“ die URL deines Overlays kopieren und in OBS als neue Browserquelle einfügen. Sie sieht so aus:</p>
+        <div class="copyrow"><span class="url" id="obsUrl">http://localhost:3000/overlay/abcd1234</span><button class="copybtn" type="button" id="copyBtn">Kopieren</button></div>
+        <p style="font-size:14px">Breite und Höhe passend zum Overlay setzen. Der Hintergrund ist automatisch transparent.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">FAQ</span>
+      <h2>Häufige Fragen</h2>
+    </div>
+    <div class="faq">
+      <details open><summary>Kostet FaceitWatcher etwas?</summary><p>Nein. Das Projekt ist Open Source und kostenlos. Den Faceit-API-Key bekommst du ebenfalls kostenlos im Faceit Developer Portal.</p></details>
+      <details><summary>Wo werden meine Statistiken gespeichert?</summary><p>Lokal auf deinem Rechner in einer SQLite-Datenbank. Es gibt keinen fremden Server, der deine Daten sammelt.</p></details>
+      <details><summary>Funktioniert das auch mit Streamlabs oder anderen Programmen?</summary><p>Ja, überall wo es eine Browserquelle gibt. Das Overlay ist eine normale Webseite mit transparentem Hintergrund.</p></details>
+      <details><summary>Wie schnell aktualisiert sich das Overlay?</summary><p>FaceitWatcher fragt die Faceit-API regelmäßig ab und schickt neue Werte sofort ans Overlay. Nach einem Match dauert es meist nur wenige Sekunden.</p></details>
+      <details><summary>Gibt es das später auch online, ohne Installation?</summary><p>Das ist geplant. FaceitWatcher startet als lokales Tool und ist so gebaut, dass daraus später eine Web-App werden kann.</p></details>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="cta">
+      <div>
+        <h2>Bau dir dein Overlay</h2>
+        <p>FaceitWatcher ist in aktiver Entwicklung. Folge dem Projekt auf GitHub, um die erste Version nicht zu verpassen.</p>
+      </div>
+      <a class="btn primary" href="https://github.com/fersehet/faceitwatcher" target="_blank" rel="noopener">Projekt auf GitHub</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>FaceitWatcher · Open-Source-Projekt</span>
+    <span>Nicht mit FACEIT verbunden. FACEIT ist eine Marke ihres jeweiligen Inhabers.</span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var ov = document.getElementById('ov');
+  var scene = document.getElementById('scene');
+
+  document.querySelectorAll('[data-toggle]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var on = btn.getAttribute('aria-pressed') !== 'true';
+      btn.setAttribute('aria-pressed', String(on));
+      var el = ov.querySelector('[data-stat="' + btn.dataset.toggle + '"]');
+      if (el) el.hidden = !on;
+    });
+  });
+
+  document.querySelectorAll('.sw').forEach(function (sw) {
+    sw.addEventListener('click', function () {
+      document.querySelectorAll('.sw').forEach(function (s) { s.setAttribute('aria-pressed', 'false'); });
+      sw.setAttribute('aria-pressed', 'true');
+      ov.style.setProperty('--ov-accent', sw.dataset.color);
+    });
+  });
+
+  var vBtn = document.getElementById('l-vertical');
+  vBtn.addEventListener('click', function () {
+    var on = vBtn.getAttribute('aria-pressed') !== 'true';
+    vBtn.setAttribute('aria-pressed', String(on));
+    ov.classList.toggle('vertical', on);
+  });
+
+  var corners = [['pos-tl', 'oben links'], ['pos-tr', 'oben rechts'], ['pos-br', 'unten rechts'], ['pos-bl', 'unten links']];
+  var ci = 0;
+  var pBtn = document.getElementById('l-pos');
+  pBtn.addEventListener('click', function () {
+    scene.classList.remove(corners[ci][0]);
+    ci = (ci + 1) % corners.length;
+    scene.classList.add(corners[ci][0]);
+    pBtn.textContent = 'Ecke: ' + corners[ci][1];
+  });
+
+  var aBtn = document.getElementById('l-alpha');
+  var label = document.getElementById('sceneLabel');
+  aBtn.addEventListener('click', function () {
+    var on = aBtn.getAttribute('aria-pressed') !== 'true';
+    aBtn.setAttribute('aria-pressed', String(on));
+    scene.classList.toggle('alpha', on);
+    scene.classList.toggle('game', !on);
+    label.textContent = on ? 'Browserquelle · transparent' : 'OBS-Szene · 1920×1080';
+  });
+
+  document.getElementById('copyBtn').addEventListener('click', function () {
+    var btn = this, text = document.getElementById('obsUrl').textContent;
+    var done = function () { btn.textContent = 'Kopiert'; setTimeout(function () { btn.textContent = 'Kopieren'; }, 1600); };
+    var fallback = function () { var r = document.createRange(); r.selectNodeContents(document.getElementById('obsUrl')); var s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = 'Markiert'; };
+    try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+  });
+
+  // Example Elo history chart, one scale for everything
+  var elo = [1572, 1597, 1574, 1550, 1574, 1598, 1621, 1598, 1622, 1645, 1621, 1597, 1620, 1643, 1667, 1644, 1620, 1636, 1659, 1684];
+  var W = 600, H = 220, padL = 44, padR = 12, padT = 12, padB = 24;
+  var min = 1500, max = 1775;
+  var x = function (i) { return padL + i * (W - padL - padR) / (elo.length - 1); };
+  var y = function (v) { return padT + (max - v) * (H - padT - padB) / (max - min); };
+  var ns = 'http://www.w3.org/2000/svg';
+  var grid = document.getElementById('grid');
+  [1500, 1600, 1700].forEach(function (v) {
+    var l = document.createElementNS(ns, 'line');
+    l.setAttribute('x1', padL); l.setAttribute('x2', W - padR); l.setAttribute('y1', y(v)); l.setAttribute('y2', y(v));
+    l.setAttribute('stroke', 'var(--line)'); grid.appendChild(l);
+    var t = document.createElementNS(ns, 'text');
+    t.setAttribute('x', padL - 8); t.setAttribute('y', y(v) + 4); t.setAttribute('text-anchor', 'end'); t.textContent = v;
+    grid.appendChild(t);
+  });
+  var lv = document.createElementNS(ns, 'line');
+  lv.setAttribute('x1', padL); lv.setAttribute('x2', W - padR); lv.setAttribute('y1', y(1751)); lv.setAttribute('y2', y(1751));
+  lv.setAttribute('stroke', 'var(--muted)'); lv.setAttribute('stroke-dasharray', '4 5'); grid.appendChild(lv);
+  var lt = document.createElementNS(ns, 'text');
+  lt.setAttribute('x', W - padR); lt.setAttribute('y', y(1751) - 6); lt.setAttribute('text-anchor', 'end'); lt.textContent = 'Level 9';
+  grid.appendChild(lt);
+  [[0, 'Match 1'], [elo.length - 1, 'Match 20']].forEach(function (p) {
+    var t = document.createElementNS(ns, 'text');
+    t.setAttribute('x', x(p[0])); t.setAttribute('y', H - 6); t.setAttribute('text-anchor', p[0] ? 'end' : 'start'); t.textContent = p[1];
+    grid.appendChild(t);
+  });
+  var d = elo.map(function (v, i) { return (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1); }).join(' ');
+  document.getElementById('line').setAttribute('d', d);
+  document.getElementById('area').setAttribute('d', d + ' L' + x(elo.length - 1) + ' ' + y(min) + ' L' + x(0) + ' ' + y(min) + ' Z');
+  var dots = document.getElementById('dots');
+  elo.forEach(function (v, i) {
+    if (i === 0) return;
+    var c = document.createElementNS(ns, 'circle');
+    c.setAttribute('cx', x(i)); c.setAttribute('cy', y(v)); c.setAttribute('r', i === elo.length - 1 ? 5 : 2.5);
+    c.setAttribute('fill', v >= elo[i - 1] ? 'var(--up)' : 'var(--down)');
+    dots.appendChild(c);
+  });
+})();
+</script>
+</body>
+</html>
