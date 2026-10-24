@@ -168,18 +168,18 @@ function widgetContent(widget, style, state) {
       return p ? el('div', { fontWeight: 600 }, String(p.longestStreak)) : null;
     case 'recentResults': {
       if (!p) return null;
-      const row = el('div', { display: 'flex', gap: `${size * 0.25}px` });
-      for (const r of p.recentResults) {
-        row.appendChild(
-          el(
-            'div',
-            {
-              width: `${size * 1.4}px`, height: `${size * 1.4}px`, borderRadius: '4px', display: 'grid', placeItems: 'center', fontWeight: 700,
-              background: hexToRgba(r === 'W' ? style.positiveColor : style.negativeColor, 0.25), color: r === 'W' ? style.positiveColor : style.negativeColor,
-            },
-            r,
-          ),
+      // Ältere Server liefern noch keine recentMatches: dann nur W/L ohne Elo
+      const recent = state?.recentMatches?.length ? state.recentMatches : p.recentResults.map((result) => ({ result, eloChange: null }));
+      const row = el('div', { display: 'flex', gap: `${size * 0.4}px` });
+      for (const m of recent) {
+        const color = m.result === 'W' ? style.positiveColor : style.negativeColor;
+        const text = m.eloChange == null ? m.result : `${m.eloChange > 0 ? '+' : ''}${m.eloChange}`;
+        const cell = el('div', { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: `${size * 0.25}px`, minWidth: `${size * 1.8}px` });
+        cell.append(
+          el('div', { fontWeight: 700, color, lineHeight: 1 }, text),
+          el('div', { alignSelf: 'stretch', height: `${Math.max(2, size * 0.2)}px`, borderRadius: '2px', background: color }),
         );
+        row.appendChild(cell);
       }
       return row;
     }

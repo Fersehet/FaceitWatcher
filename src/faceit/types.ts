@@ -51,6 +51,19 @@ export interface MatchResult {
   url: string;
 }
 
+/** Eintrag im Widget "Letzte Matches": Ergebnis und Elo-Änderung (null = unbekannt). */
+export interface RecentMatch {
+  matchId: string;
+  result: 'W' | 'L';
+  eloChange: number | null;
+}
+
+/** Elo-Stand direkt nach einem Match. */
+export interface EloAfterMatch {
+  matchId: string;
+  elo: number;
+}
+
 export type MatchDetails = Omit<MatchResult, 'avatar' | 'avatarFrame' | 'eloBefore' | 'eloAfter' | 'eloChange' | 'level'>;
 
 export interface StatsSource {
@@ -62,6 +75,8 @@ export interface StatsSource {
   fetchRecentMatches(playerId: string, count: number, isKnown: (matchId: string) => boolean): Promise<MatchDetails[]>;
   /** Bild-URL des Avatar-Rahmens oder '' (nicht Teil der offiziellen Data API, daher Best-Effort). */
   fetchAvatarFrame(playerId: string): Promise<string>;
+  /** Elo nach den letzten `count` Matches, neueste zuerst (Best-Effort, [] wenn nicht verfügbar). */
+  fetchEloHistory?(playerId: string, count: number): Promise<EloAfterMatch[]>;
 }
 
 /** Faceit CS2 Level-Grenzen (Mindest-Elo pro Level). */
