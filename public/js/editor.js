@@ -438,6 +438,14 @@ async function init() {
       await openOverlay(created.id);
     });
   });
+  $('resetOverlay').addEventListener('click', async () => {
+    if (!confirm(`Overlay "${overlay.name}" auf die Standard-Positionen und das Standard-Design zurücksetzen?`)) return;
+    clearTimeout(saveTimer);
+    await busy(async () => {
+      await api('POST', `/api/overlays/${overlay.id}/reset`);
+      await openOverlay(overlay.id);
+    });
+  });
   $('deleteOverlay').addEventListener('click', async () => {
     if (!confirm(`Overlay "${overlay.name}" wirklich löschen?`)) return;
     try {
