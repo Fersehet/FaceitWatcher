@@ -302,8 +302,13 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wr
 
 /* Karten: Lichtschein folgt der Maus */
 .feat { position: relative; transition: background .3s; }
-.feat::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .3s; background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 85, 0, .12), transparent 70%); }
-.feat:hover::before { opacity: 1; }
+/* Ein Lichtkegel für alle Boxen: leuchtet über die Trennlinien in die Nachbarboxen hinein */
+.features { position: relative; }
+.features::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .35s; background: radial-gradient(340px circle at var(--gx, 50%) var(--gy, 50%), var(--accent), transparent 70%); }
+.features:hover::before { opacity: 1; }
+.feat { z-index: 1; }
+.feat::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .35s; background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 85, 0, .17), transparent 65%); }
+.features:hover .feat::before { opacity: 1; }
 .feat .tag { transition: letter-spacing .3s; }
 .feat:hover .tag { letter-spacing: .08em; }
 .panel, details, .cta { transition: border-color .3s, opacity .7s ease, transform .7s cubic-bezier(.2, .7, .2, 1); }
@@ -803,8 +808,13 @@ details[open] p { animation: rise .35s ease; }
   spy();
 
   // Funktionskarten: Lichtschein folgt der Maus
-  document.querySelectorAll('.feat').forEach(function (card) {
-    card.addEventListener('pointermove', function (e) {
+  var featGrid = document.querySelector('.features');
+  var cards = featGrid.querySelectorAll('.feat');
+  featGrid.addEventListener('pointermove', function (e) {
+    var g = featGrid.getBoundingClientRect();
+    featGrid.style.setProperty('--gx', (e.clientX - g.left) + 'px');
+    featGrid.style.setProperty('--gy', (e.clientY - g.top) + 'px');
+    cards.forEach(function (card) {
       var r = card.getBoundingClientRect();
       card.style.setProperty('--mx', (e.clientX - r.left) + 'px');
       card.style.setProperty('--my', (e.clientY - r.top) + 'px');
@@ -967,22 +977,35 @@ function say(text, highlight = false, who = pick(NAMES)) {
 for (let i = 0; i < 6; i++) say(pick(LINES));
 
 const killfeed = document.getElementById('killfeed');
-function kill(me) {
+const ENEMIES = ['Bot Ivan', 'n0name', 'dust2king', 'lurker99', 'awpbaron'];
+// Kills und Tode des Streamers im laufenden Match, daraus entstehen Ergebnis, K/D und Winrate
+const round = { kills: 0, deaths: 0 };
+function feed(killer, victim, mine) {
   const d = document.createElement('div');
-  const killer = me ? (state.player?.nickname ?? 'Du') : pick(['s1mple_jr', 'ropz_fan', 'kRYSTAL']);
-  d.innerHTML = `<span class="${me ? 'ct' : 't'}"></span> ⌖ <span class="${me ? 't' : 'ct'}"></span>`;
+  d.innerHTML = '<span class="ct"></span> ⌖ <span class="t"></span>';
   d.children[0].textContent = killer;
-  d.children[1].textContent = pick(['Bot Ivan', 'n0name', 'dust2king', 'lurker99']);
-  if (me) d.classList.add('me');
+  d.children[1].textContent = victim;
+  if (mine) d.classList.add('me');
   killfeed.prepend(d);
   while (killfeed.children.length > 3) killfeed.lastElementChild.remove();
-  if (me) {
+}
+function kill() {
+  const me = state.player?.nickname ?? 'Du';
+  if (live) return feed(pick(['s1mple_jr', 'ropz_fan', 'kRYSTAL']), pick(ENEMIES), false);
+  // Läuft es gerade gut, wird es schwerer: so bleibt die Elo in der Nähe des echten Stands
+  const drift = ((state.player?.elo ?? 0) - startElo) / 300;
+  if (Math.random() < 0.55 - drift) {
+    round.kills++;
+    feed(me, pick(ENEMIES), true);
     const gun = document.getElementById('gun');
     gun.classList.remove('fire');
     void gun.offsetWidth;
     gun.classList.add('fire');
     const ammo = document.getElementById('ammo');
     ammo.textContent = Math.max(1, Number(ammo.textContent) - 3);
+  } else {
+    round.deaths++;
+    feed(pick(ENEMIES), me, true);
   }
 }
 
@@ -995,21 +1018,40 @@ function follow() {
 
 const LEVELS = [0, 501, 751, 901, 1051, 1201, 1351, 1531, 1751, 2001];
 const startElo = state.player?.elo ?? 0;
-// Ohne Server: Matches durchspielen, damit sich das Overlay wie im Stream verändert
+const rand = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
+// Lebenslange Kills/Tode, passend zur echten K/D (ca. 18 Tode pro Match)
+const totals = { deaths: (state.player?.matches ?? 0) * 18 };
+totals.kills = Math.round(totals.deaths * (state.player?.kd ?? 1));
+
+// Ohne Server: das Match endet nach ein paar Killfeed-Einträgen, Ergebnis und Stats folgen daraus
 function playMatch() {
   const p = state.player, s = state.session;
   if (!p || !s) return;
-  const win = p.elo > startElo + 60 ? false : p.elo < startElo - 40 ? true : Math.random() < 0.6;
-  const delta = (win ? 1 : -1) * (21 + Math.floor(Math.random() * 6));
+  const diff = round.kills - round.deaths;
+  const kills = Math.max(4, 15 + 3 * diff + rand(-2, 2));
+  const deaths = Math.max(4, 16 - 2 * diff + rand(-2, 2));
+  const win = kills - deaths + rand(-4, 4) > 0;
+  const delta = (win ? 1 : -1) * rand(21, 26);
+  const [us, them] = win ? [13, rand(4, 11)] : [rand(4, 11), 13];
+  round.kills = round.deaths = 0;
+
+  totals.kills += kills;
+  totals.deaths += deaths;
   p.elo += delta;
   p.level = LEVELS.filter((min) => p.elo >= min).length;
   p.matches += 1;
+  if (win) p.wins += 1;
+  p.winRate = Math.round((p.wins / p.matches) * 100);
+  p.kd = Math.round((totals.kills / totals.deaths) * 100) / 100;
+  p.currentStreak = win ? p.currentStreak + 1 : 0;
+  p.longestStreak = Math.max(p.longestStreak, p.currentStreak);
   p.recentResults = [win ? 'W' : 'L', ...p.recentResults].slice(0, 5);
   s.eloChange += delta;
   s.matches += 1;
   if (win) s.wins += 1; else s.losses += 1;
   draw();
-  say(win ? `GG! ${delta > 0 ? '+' : ''}${delta} Elo 🔥` : `unlucky, ${delta} Elo 😭`, true);
+  say(`${win ? 'GG' : 'unlucky'} ${us}:${them}, ${kills}/${deaths} · ${delta > 0 ? '+' : ''}${delta} Elo ${win ? '🔥' : '😭'}`, true);
+  document.getElementById('ammo').textContent = '30';
 }
 
 if (!reduced) {
@@ -1018,9 +1060,9 @@ if (!reduced) {
     if (document.hidden) return;
     tick++;
     say(pick(LINES));
-    if (tick % 3 === 0) kill(Math.random() < 0.6);
+    if (tick % 2 === 0) kill();
     if (tick % 11 === 0) follow();
-    if (!live && tick % 5 === 0) playMatch();
+    if (!live && tick % 8 === 0) playMatch();
   }, 1500);
 }
 
