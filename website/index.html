@@ -842,7 +842,7 @@ details[open] p { animation: rise .35s ease; }
 </script>
 <script type="module">
 // Vorschau mit dem echten Overlay: derselbe Renderer wie die OBS-Browserquelle (js/render.js aus dem Tool).
-// Auf dem FaceitWatcher-Server kommen Overlay und Werte live aus live.json, sonst Beispieldaten aus demo.json.
+// Das Layout steht in demo.json. Auf dem FaceitWatcher-Server kommen die Werte live aus live.json, sonst aus demo.json.
 import { renderOverlay } from './js/render.js';
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -861,18 +861,20 @@ async function load(url) {
   return data;
 }
 
+// Das Layout kommt immer aus demo.json, damit die Seite überall gleich aussieht. Der Server liefert nur die Werte.
+const demo = await load('demo.json');
+({ overlay, state } = demo);
+const withSeason = (s) => ({ ...s, season: s.season ?? demo.state.season });
 try {
-  ({ overlay, state } = await load('live.json'));
+  state = withSeason((await load('live.json')).state);
   live = true;
-} catch {
-  ({ overlay, state } = await load('demo.json'));
-}
+} catch {}
 
 const source = document.getElementById('dataSource');
 if (live) {
   source.textContent = state.demo ? 'Server · Demo-Modus' : 'Live-Daten';
   source.classList.toggle('live', !state.demo);
-  document.getElementById('demoNote').textContent = 'Das ist das echte Overlay vom FaceitWatcher-Server mit den aktuellen Werten. Deine Änderungen hier bleiben nur in dieser Vorschau.';} else if (state.player) {
+  document.getElementById('demoNote').textContent = 'Das Overlay zeichnet derselbe Renderer wie die OBS-Browserquelle, mit den aktuellen Werten vom FaceitWatcher-Server. Deine Änderungen hier bleiben nur in dieser Vorschau.';} else if (state.player) {
   source.textContent = `${state.player.nickname} · Stand 24.10.`;
   document.getElementById('demoNote').textContent = `Echtes Overlay mit dem Faceit-Account ${state.player.nickname} (Stand 24.10.2026). Die Matches, die hier durchlaufen, sind simuliert. Probier die Schalter aus.`;
 }
@@ -1098,7 +1100,7 @@ if (live) {
   setInterval(async () => {
     try {
       const data = await load('live.json');
-      state = data.state;
+      state = withSeason(data.state);
       draw();
     } catch {}
   }, 30000);
