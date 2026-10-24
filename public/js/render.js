@@ -136,8 +136,8 @@ function widgetContent(widget, style, state) {
       bar.appendChild(el('div', { width: `${pct * 100}%`, height: '100%', background: style.accentColor }));
       wrap.appendChild(bar);
       // Links die Elo bis zum Abstieg ins Level darunter (wie bei Faceit), rechts die Elo bis zum nächsten Level
-      const down = idx > 0 ? `-${p.elo - min + 1}` : '';
-      const up = next ? `+${next - p.elo}` : '';
+      const down = idx > 0 ? String(p.elo - min + 1) : '';
+      const up = next ? String(next - p.elo) : '';
       const labels = el('div', { marginTop: '3px', color: style.labelColor, display: 'flex', justifyContent: 'space-between' });
       labels.append(el('span', {}, down), el('span', {}, up));
       wrap.appendChild(labels);
