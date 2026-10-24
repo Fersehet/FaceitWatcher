@@ -30,6 +30,18 @@ tracker.on('state', (state) => broadcast('state', state));
 tracker.on('match', (match) => broadcast('match', match));
 
 const app = express();
+
+// Landingpage: immer unter /site, auf den Domains aus SITE_HOST ausschließlich die Landingpage
+const website = express.static(fileURLToPath(new URL('../website', import.meta.url)));
+if (config.siteHosts.length > 0) {
+  app.use((req, res, next) => {
+    if (!config.siteHosts.includes(req.hostname.toLowerCase())) return next();
+    // Editor, Overlays und API bleiben von außen unerreichbar
+    website(req, res, () => void res.status(404).send('Nicht gefunden'));
+  });
+}
+app.use('/site', website);
+
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static(fileURLToPath(new URL('../public', import.meta.url))));
 

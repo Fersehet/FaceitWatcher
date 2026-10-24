@@ -57,6 +57,21 @@ In OBS dann die LAN-Adresse des Servers verwenden, z. B. `http://192.168.0.10:30
 
 Update: `git pull` und danach `docker compose up -d --build`.
 
+## Landingpage
+
+Die Werbeseite aus `website/` liefert derselbe Server mit aus, mit `npm start` genauso wie in Docker. Lokal liegt sie unter **http://localhost:3000/site/**.
+
+### Öffentlich über Nginx Proxy Manager
+
+1. In `.env` die Domain eintragen, z. B. `SITE_HOST=faceitwatcher.example.de`, und `docker compose up -d` ausführen.
+2. Im Nginx Proxy Manager unter **Hosts → Proxy Hosts → Add Proxy Host**:
+   - **Domain Names**: `faceitwatcher.example.de`
+   - **Scheme**: `http`, **Forward Hostname / IP**: die LAN-IP des Servers (oder `faceitwatcher`, wenn NPM im selben Docker-Netzwerk läuft), **Forward Port**: `3000`
+   - Reiter **SSL**: „Request a new SSL Certificate“ und „Force SSL“ anhaken.
+3. Die Domain zeigt jetzt die Landingpage auf `/`.
+
+Unter der `SITE_HOST`-Domain beantwortet der Server nur Anfragen für die Landingpage. Editor, Overlays und API sind darüber nicht erreichbar und bleiben im Heimnetz.
+
 ## Discord-Bot
 
 Nach jedem beendeten Match postet der Bot das Ergebnis in einen Channel: Sieg/Niederlage, Map, Endstand, Elo-Änderung, K/D/A, K/D, ADR, HS % und MVPs. Der Bot fragt Faceit nicht selbst ab, er bekommt die Matches vom Server. Fehlt eine Nachricht, weil der Bot kurz weg war, holt er sie beim Wiederverbinden nach. Beim allerersten Start werden alte Matches übersprungen.

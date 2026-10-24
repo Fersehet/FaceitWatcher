@@ -17,7 +17,7 @@ services:
       PORT: 3000
       DB_PATH: /app/data/faceitwatcher.db
     ports:
-      - "3000:3000"   # Editor + OBS-Overlay unter http://<IP-des-Servers>:3000
+      - "3000:3000"   # Editor + OBS-Overlay unter http://<IP-des-Servers>:3000, Landingpage unter /site/
     volumes:
       - ./data:/app/data
 
