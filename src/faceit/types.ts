@@ -47,6 +47,8 @@ export interface MatchResult {
   eloBefore: number | null;
   eloAfter: number | null;
   eloChange: number | null;
+  /** true = eloChange ist geschätzt (z. B. mehrere Matches zwischen zwei Abrufen), nicht gemessen oder eingetragen */
+  eloEstimated?: boolean;
   level: number;
   url: string;
 }
@@ -56,6 +58,10 @@ export interface RecentMatch {
   matchId: string;
   result: 'W' | 'L';
   eloChange: number | null;
+  /** Geschätzt statt gemessen; im Editor lässt sich der echte Wert nachtragen */
+  estimated: boolean;
+  map: string;
+  finishedAt: string;
 }
 
 /** Elo-Stand direkt nach einem Match. */
@@ -66,7 +72,7 @@ export interface EloAfterMatch {
   delta: number | null;
 }
 
-export type MatchDetails = Omit<MatchResult, 'avatar' | 'avatarFrame' | 'eloBefore' | 'eloAfter' | 'eloChange' | 'level'>;
+export type MatchDetails = Omit<MatchResult, 'avatar' | 'avatarFrame' | 'eloBefore' | 'eloAfter' | 'eloChange' | 'eloEstimated' | 'level'>;
 
 export interface StatsSource {
   readonly demo: boolean;

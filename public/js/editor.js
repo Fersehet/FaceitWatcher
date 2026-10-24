@@ -401,6 +401,38 @@ function renderStatus() {
   $('sessionInfo').textContent = s
     ? t('session', { t: new Date(s.startedAt).toLocaleString(locale()), w: s.wins, l: s.losses, e: `${s.eloChange >= 0 ? '+' : ''}${s.eloChange}` })
     : '';
+  renderRecentElo();
+}
+
+// ---------- Elo der letzten Matches ----------
+
+function renderRecentElo() {
+  const list = $('recentEloList');
+  // Nicht neu zeichnen, während eine Zahl eingetippt wird
+  if (list.contains(document.activeElement)) return;
+  list.replaceChildren();
+  for (const m of state?.recentMatches ?? []) {
+    if (!m.matchId) continue;
+    const li = document.createElement('li');
+    const res = Object.assign(document.createElement('span'), { className: `res ${m.result}`, textContent: m.result });
+    const date = m.finishedAt ? new Date(m.finishedAt).toLocaleString(locale(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+    const info = Object.assign(document.createElement('span'), { className: 'info', textContent: [m.map.replace(/^de_/, ''), date].filter(Boolean).join(' · ') });
+    const amount = m.eloChange == null ? '' : String(Math.abs(m.eloChange));
+    const field = Object.assign(document.createElement('input'), { type: 'number', min: 0, max: 100, step: 1 });
+    // Geschätzt: nur als Platzhalter zeigen, damit klar ist, dass noch nichts eingetragen wurde
+    if (m.estimated) {
+      field.placeholder = amount;
+      field.classList.add('estimated');
+    } else field.value = amount;
+    field.addEventListener('change', async () => {
+      state = await api('PUT', `/api/matches/${encodeURIComponent(m.matchId)}/elo`, { elo: field.value === '' ? null : Number(field.value) });
+      field.blur();
+      renderStatus();
+      drawPreview();
+    });
+    li.append(res, info, field);
+    list.appendChild(li);
+  }
 }
 
 // ---------- Start ----------
