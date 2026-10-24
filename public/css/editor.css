@@ -29,7 +29,7 @@ header {
   flex-wrap: wrap;
 }
 
-.brand { font-weight: 800; font-size: 18px; }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 18px; }
 .brand span { color: var(--accent); }
 
 .status { font-size: 12px; padding: 3px 8px; border-radius: 99px; background: var(--panel-2); color: var(--muted); }
