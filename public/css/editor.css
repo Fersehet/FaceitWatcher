@@ -29,8 +29,13 @@ header {
   flex-wrap: wrap;
 }
 
-.brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 18px; }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 18px; letter-spacing: -.01em; }
 .brand span { color: var(--accent); }
+/* Logo wie auf der Website: beim Überfahren scoped das Fadenkreuz rein (Zoom mit kurzem Nachfedern) */
+.brand-mark { flex: none; transition: transform .35s cubic-bezier(.2, .8, .3, 1), filter .35s; transform-origin: 50% 50%; }
+.brand:hover .brand-mark { transform: scale(1.28); filter: drop-shadow(0 0 6px rgba(255, 85, 0, .7)); animation: scope-in .45s cubic-bezier(.2, .8, .3, 1); }
+@keyframes scope-in { 0% { transform: scale(1); } 55% { transform: scale(1.38); } 100% { transform: scale(1.28); } }
+@media (prefers-reduced-motion: reduce) { .brand-mark { transition: none; } .brand:hover .brand-mark { animation: none; } }
 
 .status { font-size: 12px; padding: 3px 8px; border-radius: 99px; background: var(--panel-2); color: var(--muted); }
 .status.demo { color: #ffc800; }
