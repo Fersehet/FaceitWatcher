@@ -2,6 +2,9 @@ import { EventEmitter } from 'node:events';
 import type { MatchResult, PlayerSnapshot, StatsSource } from './faceit/types.ts';
 import type { Storage } from './storage/storage.ts';
 
+/** Beginn der aktuellen FACEIT-Season (Season 9), solange im Editor kein eigenes Datum gesetzt ist. */
+const DEFAULT_SEASON_START = '2026-08-05';
+
 export interface Session {
   /** Gehört die Session zu einem anderen Spieler (z. B. Demo → echter Account), wird neu gestartet. */
   playerId?: string;
@@ -64,7 +67,7 @@ export class Tracker extends EventEmitter {
     this.state = {
       demo: source.demo,
       nickname: storage.getSetting('nickname') ?? defaultNickname,
-      seasonStart: storage.getSetting('seasonStart') ?? '',
+      seasonStart: storage.getSetting('seasonStart') ?? DEFAULT_SEASON_START,
       avatarFrameOverride: storage.getSetting('avatarFrameUrl') ?? '',
       player: null,
       session: null,

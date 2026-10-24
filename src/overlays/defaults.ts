@@ -11,7 +11,7 @@ const LABELS: Record<WidgetType, string> = {
   sessionRecord: 'Heute',
   matches: 'Matches',
   winRate: 'Winrate',
-  seasonWinRate: 'Season Winrate',
+  seasonWinRate: 'Season WR',
   kd: 'K/D',
   hsPercent: 'HS %',
   adr: 'ADR',
@@ -29,10 +29,10 @@ const LAYOUT: Record<WidgetType, Layout> = {
   elo: { x: 124, y: 54, fontSize: 22, enabled: true, showLabel: false },
   eloProgress: { x: 16, y: 88, fontSize: 12, enabled: true, showLabel: false },
   eloToday: { x: 240, y: 18, fontSize: 18, enabled: true, showLabel: true },
-  sessionRecord: { x: 320, y: 18, fontSize: 18, enabled: true, showLabel: true },
+  sessionRecord: { x: 320, y: 32, fontSize: 18, enabled: true, showLabel: false },
   matches: { x: 16, y: 120, fontSize: 16, enabled: false, showLabel: true },
-  winRate: { x: 16, y: 120, fontSize: 16, enabled: true, showLabel: true },
-  seasonWinRate: { x: 300, y: 120, fontSize: 16, enabled: false, showLabel: true },
+  winRate: { x: 300, y: 120, fontSize: 16, enabled: false, showLabel: true },
+  seasonWinRate: { x: 16, y: 120, fontSize: 16, enabled: true, showLabel: true },
   kd: { x: 100, y: 120, fontSize: 16, enabled: true, showLabel: true },
   hsPercent: { x: 170, y: 120, fontSize: 16, enabled: true, showLabel: true },
   adr: { x: 240, y: 120, fontSize: 16, enabled: false, showLabel: true },
@@ -99,6 +99,20 @@ export function upgradeOverlay(overlay: Overlay): Overlay {
     recent.x = LAYOUT.recentResults.x!;
     recent.y = LAYOUT.recentResults.y!;
     recent.autoPlace = true;
+  }
+  // Früher stand über der Tagesbilanz die Beschriftung „Heute“; ohne sie rutscht der Wert auf die Höhe von „Elo heute“
+  const record = overlay.widgets.find((w) => w.type === 'sessionRecord');
+  if (record && record.x === 320 && record.y === 18 && record.showLabel) {
+    record.showLabel = false;
+    record.y = LAYOUT.sessionRecord.y!;
+  }
+  // Früher zeigte das Standard-Overlay die Gesamt-Winrate, jetzt die der aktuellen Season
+  const total = overlay.widgets.find((w) => w.type === 'winRate');
+  const season = overlay.widgets.find((w) => w.type === 'seasonWinRate');
+  if (total?.enabled && total.x === 16 && total.y === 120 && season && !season.enabled && season.x === 300 && season.y === 120) {
+    total.enabled = false;
+    total.x = LAYOUT.winRate.x!;
+    Object.assign(season, { enabled: true, x: 16, y: 120, label: season.label === 'Season Winrate' ? LABELS.seasonWinRate : season.label });
   }
   return overlay;
 }
