@@ -1,6 +1,9 @@
-<img src="public/logo.svg" alt="FaceitWatcher Logo" width="96" height="96">
-
-# FaceitWatcher
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/logo-wordmark.svg">
+    <img src="public/logo-wordmark-light.svg" alt="FaceitWatcher" height="64">
+  </picture>
+</h1>
 
 Lokales Tool, mit dem du eigene Faceit-Overlays (Elo, Level, Session-Stats, K/D, …) für OBS baust und deine Faceit-Statistiken automatisch speicherst.
 
