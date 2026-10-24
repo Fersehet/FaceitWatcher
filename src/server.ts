@@ -5,7 +5,7 @@ import { AssetCache, isFaceitUrl } from './assets.ts';
 import { config, demoReason, isDemo } from './config.ts';
 import { FaceitClient } from './faceit/client.ts';
 import { DemoSource } from './faceit/demo.ts';
-import { createDefaultOverlay, upgradeOverlay, WIDGET_LABELS } from './overlays/defaults.ts';
+import { createDefaultOverlay, upgradeOverlay, useSeasonWinRate, WIDGET_LABELS } from './overlays/defaults.ts';
 import type { Overlay } from './overlays/types.ts';
 import { SqliteStorage } from './storage/sqlite.ts';
 import { Tracker } from './tracker.ts';
@@ -19,6 +19,14 @@ const tracker = new Tracker(source, storage, isDemo ? 15 : config.pollIntervalSe
 const assets = new AssetCache(join(dirname(config.dbPath), 'assets'), config.levelIconUrl);
 
 if (storage.listOverlays(OWNER).length === 0) storage.saveOverlay(createDefaultOverlay());
+
+// Einmalig: gespeicherte Overlays zeigen statt der Gesamt-Winrate die Winrate der aktuellen Season
+if (!storage.getSetting('seasonWinRateMigrated')) {
+  for (const overlay of storage.listOverlays(OWNER)) {
+    if (useSeasonWinRate(upgradeOverlay(overlay))) storage.saveOverlay(overlay);
+  }
+  storage.setSetting('seasonWinRateMigrated', '1');
+}
 
 // Live-Updates per Server-Sent Events (funktioniert ohne Zusatz in der OBS-Browserquelle)
 const clients = new Set<Response>();
