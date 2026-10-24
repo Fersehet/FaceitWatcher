@@ -26,8 +26,8 @@ type Layout = Partial<Pick<Widget, 'x' | 'y' | 'fontSize' | 'enabled' | 'showLab
 const LAYOUT: Record<WidgetType, Layout> = {
   avatar: { x: 16, y: 16, fontSize: 56, enabled: true, showLabel: false },
   nickname: { x: 90, y: 11, fontSize: 22, enabled: true, showLabel: false },
-  level: { x: 84, y: 42, fontSize: 20, enabled: true, showLabel: false },
-  elo: { x: 120, y: 46, fontSize: 22, enabled: true, showLabel: false },
+  level: { x: 88, y: 42, fontSize: 20, enabled: true, showLabel: false },
+  elo: { x: 124, y: 46, fontSize: 22, enabled: true, showLabel: false },
   eloProgress: { x: 16, y: 88, fontSize: 12, enabled: true, showLabel: false },
   eloToday: { x: 240, y: 18, fontSize: 18, enabled: true, showLabel: true },
   sessionRecord: { x: 336, y: 32, fontSize: 18, enabled: true, showLabel: false },
