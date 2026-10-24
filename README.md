@@ -57,6 +57,12 @@ In OBS dann die LAN-Adresse des Servers verwenden, z. B. `http://192.168.0.10:30
 
 Update: `git pull` und danach `docker compose up -d --build`.
 
+## Landingpage (optional)
+
+Der Server kann zusätzlich eine statische Website unter `/site/` ausliefern. Sie gehört nicht zu diesem Repo: Lege die Dateien in den Ordner `website/` neben dieser README (wird von Git ignoriert und in Docker eingebunden) oder gib mit `SITE_DIR` einen anderen Ordner an.
+
+Mit `SITE_HOST=deine-domain.de` in `.env` beantwortet der Server unter dieser Domain nur Anfragen für die Website (z. B. hinter Nginx Proxy Manager). Editor, Overlays und API sind darüber nicht erreichbar und bleiben im Heimnetz.
+
 ## Discord-Bot
 
 Nach jedem beendeten Match postet der Bot das Ergebnis in einen Channel: Sieg/Niederlage, Map, Endstand, Elo-Änderung, K/D/A, K/D, ADR, HS % und MVPs. Der Bot fragt Faceit nicht selbst ab, er bekommt die Matches vom Server. Fehlt eine Nachricht, weil der Bot kurz weg war, holt er sie beim Wiederverbinden nach. Beim allerersten Start werden alte Matches übersprungen.

@@ -392,7 +392,7 @@ function renderStatus() {
   const season = state?.season;
   $('seasonInfo').textContent = season
     ? `Season: ${season.wins}W / ${season.losses}L in ${season.matches} Matches (${season.winRate}%)`
-    : state?.seasonStart ? '' : 'Ohne Datum zeigt „Season Winrate“ nur einen Strich.';
+    : state?.seasonStart ? '' : 'Ohne Datum zeigt „Season WR“ nur einen Strich.';
   const s = state?.session;
   $('sessionInfo').textContent = s
     ? `Session seit ${new Date(s.startedAt).toLocaleString('de-DE')}: ${s.wins}W / ${s.losses}L, Elo ${s.eloChange >= 0 ? '+' : ''}${s.eloChange}`

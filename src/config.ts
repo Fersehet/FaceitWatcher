@@ -38,6 +38,13 @@ export const config = {
   defaultNickname: process.env.FACEIT_NICKNAME?.trim() || '',
   pollIntervalSeconds: Math.max(15, Number(process.env.POLL_INTERVAL_SECONDS) || 60),
   dbPath: process.env.DB_PATH || './data/faceitwatcher.db',
+  /** Ordner der Landingpage (liegt in einem eigenen, privaten Repo). Fehlt er, gibt es unter /site nur 404. */
+  siteDir: resolve(fileURLToPath(new URL('..', import.meta.url)), process.env.SITE_DIR || 'website'),
+  /** Domains, unter denen nur die Landingpage erscheint (z. B. über Nginx Proxy Manager), kommagetrennt */
+  siteHosts: (process.env.SITE_HOST || '')
+    .split(',')
+    .map((h) => h.trim().toLowerCase())
+    .filter(Boolean),
   /** Vorlage für die offiziellen Faceit-Level-Symbole, {level} = 1–10 */
   levelIconUrl:
     process.env.LEVEL_ICON_URL ||

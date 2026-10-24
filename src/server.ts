@@ -30,6 +30,26 @@ tracker.on('state', (state) => broadcast('state', state));
 tracker.on('match', (match) => broadcast('match', match));
 
 const app = express();
+
+// Landingpage: immer unter /site, auf den Domains aus SITE_HOST ausschließlich die Landingpage.
+// Die Vorschau dort nutzt den echten Overlay-Renderer und das erste gespeicherte Overlay (nur lesend).
+const site = express.Router();
+site.get('/js/render.js', (_req, res) => res.sendFile(fileURLToPath(new URL('../public/js/render.js', import.meta.url))));
+site.get('/live.json', (_req, res) => {
+  const overlay = storage.listOverlays(OWNER)[0];
+  res.set('Cache-Control', 'no-cache').json({ overlay: overlay ? upgradeOverlay(overlay) : null, state: tracker.state });
+});
+site.use(express.static(config.siteDir));
+if (config.siteHosts.length > 0) {
+  app.use((req, res, next) => {
+    if (!config.siteHosts.includes(req.hostname.toLowerCase())) return next();
+    // Bilder für das Overlay (Avatar, Level) dürfen durch, Editor und API bleiben von außen unerreichbar
+    if (req.method === 'GET' && req.path.startsWith('/assets/')) return next();
+    site(req, res, () => void res.status(404).send('Nicht gefunden'));
+  });
+}
+app.use('/site', site);
+
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static(fileURLToPath(new URL('../public', import.meta.url))));
 
