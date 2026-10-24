@@ -1,4 +1,5 @@
 import { FONTS, renderOverlay } from './render.js';
+import { createLoader } from './loader.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -340,35 +341,48 @@ function renderStatus() {
 // ---------- Start ----------
 
 async function init() {
-  state = await api('GET', '/api/state');
-  overlays = await api('GET', '/api/overlays');
-  renderStatus();
+  const pageLoader = createLoader(document.body, { fixed: true });
+  const previewLoader = createLoader(document.querySelector('.preview-area'));
+  // Änderungen, die vom Server geladen werden, zeigen den Ladebildschirm über der Vorschau
+  const busy = (task) => previewLoader.wrap(task);
 
-  const remembered = localStorage.getItem('fw-overlay');
-  await openOverlay(overlays.some((o) => o.id === remembered) ? remembered : overlays[0].id);
+  await pageLoader.wrap(async () => {
+    state = await api('GET', '/api/state');
+    overlays = await api('GET', '/api/overlays');
+    renderStatus();
+
+    const remembered = localStorage.getItem('fw-overlay');
+    await openOverlay(overlays.some((o) => o.id === remembered) ? remembered : overlays[0].id);
+  });
   setupDragging();
 
-  $('overlaySelect').addEventListener('change', (e) => openOverlay(e.target.value));
+  $('overlaySelect').addEventListener('change', (e) => busy(openOverlay(e.target.value)));
   $('overlayName').addEventListener('input', (e) => {
     overlay.name = e.target.value || 'Overlay';
     scheduleSave();
   });
   $('newOverlay').addEventListener('click', async () => {
-    const created = await api('POST', '/api/overlays', { name: 'Neues Overlay' });
-    overlays.push(created);
-    await openOverlay(created.id);
+    await busy(async () => {
+      const created = await api('POST', '/api/overlays', { name: 'Neues Overlay' });
+      overlays.push(created);
+      await openOverlay(created.id);
+    });
   });
   $('copyOverlay').addEventListener('click', async () => {
-    const created = await api('POST', '/api/overlays', { name: `${overlay.name} (Kopie)`, copyFrom: overlay.id });
-    overlays.push(created);
-    await openOverlay(created.id);
+    await busy(async () => {
+      const created = await api('POST', '/api/overlays', { name: `${overlay.name} (Kopie)`, copyFrom: overlay.id });
+      overlays.push(created);
+      await openOverlay(created.id);
+    });
   });
   $('deleteOverlay').addEventListener('click', async () => {
     if (!confirm(`Overlay "${overlay.name}" wirklich löschen?`)) return;
     try {
-      await api('DELETE', `/api/overlays/${overlay.id}`);
-      overlays = overlays.filter((o) => o.id !== overlay.id);
-      await openOverlay(overlays[0].id);
+      await busy(async () => {
+        await api('DELETE', `/api/overlays/${overlay.id}`);
+        overlays = overlays.filter((o) => o.id !== overlay.id);
+        await openOverlay(overlays[0].id);
+      });
     } catch (err) {
       alert(err.message);
     }
@@ -376,14 +390,14 @@ async function init() {
 
   $('nicknameForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    state = await api('PUT', '/api/nickname', { nickname: $('nickname').value });
+    state = await busy(api('PUT', '/api/nickname', { nickname: $('nickname').value }));
     renderStatus();
     drawPreview();
   });
   $('frameForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
-      state = await api('PUT', '/api/avatar-frame', { url: $('frameUrl').value });
+      state = await busy(api('PUT', '/api/avatar-frame', { url: $('frameUrl').value }));
       renderStatus();
       drawPreview();
     } catch (err) {
@@ -391,17 +405,17 @@ async function init() {
     }
   });
   $('seasonStart').addEventListener('change', async (e) => {
-    state = await api('PUT', '/api/season', { start: e.target.value });
+    state = await busy(api('PUT', '/api/season', { start: e.target.value }));
     renderStatus();
     drawPreview();
   });
   $('refresh').addEventListener('click', async () => {
-    state = await api('POST', '/api/refresh');
+    state = await busy(api('POST', '/api/refresh'));
     renderStatus();
     drawPreview();
   });
   $('resetSession').addEventListener('click', async () => {
-    state = await api('POST', '/api/session/reset');
+    state = await busy(api('POST', '/api/session/reset'));
     renderStatus();
     drawPreview();
   });
