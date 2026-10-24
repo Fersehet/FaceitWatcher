@@ -45,6 +45,11 @@ export const config = {
     .split(',')
     .map((h) => h.trim().toLowerCase())
     .filter(Boolean),
+  /** Zugang für den Editor über die Website (SITE_HOST). Ohne Passwort bleibt der Editor dort gesperrt. */
+  adminUser: process.env.ADMIN_USER?.trim() || 'admin',
+  adminPassword: process.env.ADMIN_PASSWORD || '',
+  /** Schlüssel für die Login-Cookies. Leer = wird einmalig zufällig erzeugt und neben der Datenbank gespeichert. */
+  sessionSecret: process.env.SESSION_SECRET?.trim() || '',
   /** Vorlage für die offiziellen Faceit-Level-Symbole, {level} = 1–10 */
   levelIconUrl:
     process.env.LEVEL_ICON_URL ||

@@ -9,6 +9,8 @@ const api = async (method, url, body) => {
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
     body: body ? JSON.stringify(body) : undefined,
   });
+  // Sitzung über die Website abgelaufen
+  if (res.status === 401) location.href = `/login.html?next=${encodeURIComponent(location.pathname)}`;
   if (!res.ok && res.status !== 204) throw new Error((await res.json().catch(() => ({}))).error ?? res.statusText);
   return res.status === 204 ? null : res.json();
 };
@@ -496,4 +498,17 @@ async function init() {
   });
 }
 
+// Über die Website-Domain: angemeldeten Nutzer zeigen und Abmelden anbieten
+async function initAccount() {
+  const me = await fetch('/api/me').then((r) => r.json()).catch(() => null);
+  if (!me?.site || !me.user) return;
+  $('accountName').textContent = me.user;
+  $('account').hidden = false;
+  $('logout').addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    location.href = '/login.html';
+  });
+}
+
 init();
+initAccount();
