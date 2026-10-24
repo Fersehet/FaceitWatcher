@@ -26,7 +26,7 @@ const LAYOUT: Record<WidgetType, Layout> = {
   avatar: { x: 16, y: 16, fontSize: 56, enabled: true, showLabel: false },
   nickname: { x: 88, y: 18, fontSize: 22, enabled: true, showLabel: false },
   level: { x: 88, y: 50, fontSize: 20, enabled: true, showLabel: false },
-  elo: { x: 124, y: 50, fontSize: 22, enabled: true, showLabel: false },
+  elo: { x: 124, y: 54, fontSize: 22, enabled: true, showLabel: false },
   eloProgress: { x: 16, y: 88, fontSize: 12, enabled: true, showLabel: false },
   eloToday: { x: 240, y: 18, fontSize: 18, enabled: true, showLabel: true },
   sessionRecord: { x: 320, y: 18, fontSize: 18, enabled: true, showLabel: true },

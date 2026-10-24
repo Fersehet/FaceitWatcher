@@ -109,3 +109,4 @@ button.danger:hover { border-color: var(--danger); color: var(--danger); }
 }
 
 .grid input:not([type='checkbox']), .grid select { width: 100%; min-width: 0; }
+.snap-guide { position: absolute; background: #ff5500; pointer-events: none; z-index: 10; }
