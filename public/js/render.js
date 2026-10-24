@@ -30,6 +30,9 @@ export function loadFont(family) {
   document.head.appendChild(link);
 }
 
+const SVG_NS = 'http://www.w3.org/2000/svg';
+let knockoutId = 0;
+
 function el(tag, styles = {}, text) {
   const node = document.createElement(tag);
   Object.assign(node.style, styles);
@@ -170,16 +173,22 @@ function widgetContent(widget, style, state) {
       if (!p) return null;
       // Ältere Server liefern noch keine recentMatches: dann nur W/L ohne Elo
       const recent = state?.recentMatches?.length ? state.recentMatches : p.recentResults.map((result) => ({ result, eloChange: null }));
-      const row = el('div', { display: 'flex', gap: `${size * 0.4}px` });
+      const row = el('div', { display: 'flex', gap: `${size * 0.25}px` });
+      const [w, h] = [size * 2.2, size * 1.4];
       for (const m of recent) {
         const color = m.result === 'W' ? style.positiveColor : style.negativeColor;
         const text = m.eloChange == null ? m.result : `${m.eloChange > 0 ? '+' : ''}${m.eloChange}`;
-        const cell = el('div', { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: `${size * 0.25}px`, minWidth: `${size * 1.8}px` });
-        cell.append(
-          el('div', { fontWeight: 700, color, lineHeight: 1 }, text),
-          el('div', { alignSelf: 'stretch', height: `${Math.max(2, size * 0.2)}px`, borderRadius: '2px', background: color }),
-        );
-        row.appendChild(cell);
+        // Farbiger Kasten, die Zahl ist ausgestanzt: dort scheint der Hintergrund durch
+        const id = `fw-knockout-${++knockoutId}`;
+        const svg = document.createElementNS(SVG_NS, 'svg');
+        svg.setAttribute('width', w);
+        svg.setAttribute('height', h);
+        svg.style.display = 'block';
+        svg.innerHTML = `<mask id="${id}"><rect width="100%" height="100%" fill="#fff"/>`
+          + `<text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" font-weight="700" font-size="${size}" fill="#000"></text></mask>`
+          + `<rect width="100%" height="100%" rx="4" fill="${color}" mask="url(#${id})"/>`;
+        svg.querySelector('text').textContent = text;
+        row.appendChild(svg);
       }
       return row;
     }
