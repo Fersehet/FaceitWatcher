@@ -1,7 +1,7 @@
 <h1>
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="public/logo-wordmark.svg">
-    <img src="public/logo-wordmark-light.svg" alt="FaceitWatcher" height="64">
+    <source media="(prefers-color-scheme: dark)" srcset="public/logo-animated.svg">
+    <img src="public/logo-animated-light.svg" alt="FaceitWatcher" height="72">
   </picture>
 </h1>
 
