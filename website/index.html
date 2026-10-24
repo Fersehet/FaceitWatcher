@@ -259,8 +259,10 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wr
 .progress { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 20; background: var(--accent); box-shadow: 0 0 10px var(--glow); transform-origin: left; transform: scaleX(0); }
 .nav { transition: box-shadow .3s, background .3s; }
 .nav.scrolled { box-shadow: 0 10px 30px rgba(0, 0, 0, .35); }
-.brand-mark { transition: transform .5s cubic-bezier(.3, 1.4, .5, 1); }
-.brand:hover .brand-mark { transform: rotate(90deg); }
+/* Hover: das Fadenkreuz scoped rein (Zoom mit kurzem Nachfedern) */
+.brand-mark { transition: transform .35s cubic-bezier(.2, .8, .3, 1), filter .35s; transform-origin: 50% 50%; }
+.brand:hover .brand-mark, .brand:focus-visible .brand-mark { transform: scale(1.28); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 70%, transparent)); animation: scope-in .45s cubic-bezier(.2, .8, .3, 1); }
+@keyframes scope-in { 0% { transform: scale(1); } 55% { transform: scale(1.38); } 100% { transform: scale(1.28); } }
 .nav-links a:not(.btn) { position: relative; transition: color .2s; }
 .nav-links a:not(.btn)::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: var(--accent); transform: scaleX(0); transition: transform .25s ease; }
 .nav-links a.active, .nav-links a:not(.btn):hover { color: var(--fg); }
