@@ -107,6 +107,15 @@ export function upgradeOverlay(overlay: Overlay): Overlay {
     record.showLabel = false;
     record.y = LAYOUT.sessionRecord.y!;
   }
+  // Level und Elo standen im Standard-Layout zuerst 4 px weiter links
+  const level = overlay.widgets.find((w) => w.type === 'level');
+  const elo = overlay.widgets.find((w) => w.type === 'elo');
+  if (level && elo && level.x === 84 && level.y === 42 && elo.x === 120 && elo.y === 46) {
+    level.x = LAYOUT.level.x!;
+    elo.x = LAYOUT.elo.x!;
+  }
+  // Die Tagesbilanz endet seit der festen Breite bei x 336 bündig mit dem Elo-Balken
+  if (record && record.x === 320 && record.y === 32) record.x = LAYOUT.sessionRecord.x!;
   return overlay;
 }
 
