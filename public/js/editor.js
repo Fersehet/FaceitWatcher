@@ -10,7 +10,7 @@ const api = async (method, url, body) => {
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
     body: body ? JSON.stringify(body) : undefined,
   });
-  // Sitzung über die Website abgelaufen
+  // Sitzung abgelaufen
   if (res.status === 401) location.href = `/login.html?next=${encodeURIComponent(location.pathname)}`;
   if (!res.ok && res.status !== 204) throw new Error((await res.json().catch(() => ({}))).error ?? res.statusText);
   return res.status === 204 ? null : res.json();
@@ -516,6 +516,7 @@ async function initAccount() {
   });
   const me = await fetch('/api/me').then((r) => r.json()).catch(() => null);
   if (me?.user) $('accountName').textContent = me.user;
+  $('startPage').hidden = !me?.startPage;
 }
 
 // Sprache: feste Texte übersetzt i18n.js, die selbst gebauten Teile werden neu gezeichnet

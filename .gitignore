@@ -2,5 +2,5 @@ node_modules/
 data/
 .env
 *.log
-# Landingpage liegt in einem eigenen, privaten Repo
+# Optionale eigene Startseite (siehe SITE_DIR in .env.example)
 website/
