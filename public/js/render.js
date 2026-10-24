@@ -171,15 +171,15 @@ function widgetContent(widget, style, state) {
       return p ? el('div', { fontWeight: 600 }, String(p.longestStreak)) : null;
     case 'recentResults': {
       if (!p) return null;
-      // Ältere Server liefern noch keine recentMatches: dann Kästen ohne Zahl
+      // Ältere Server liefern noch keine recentMatches: dann nur Striche
       const recent = state?.recentMatches?.length ? state.recentMatches : p.recentResults.map((result) => ({ result, eloChange: null }));
       const row = el('div', { display: 'flex', gap: `${size * 0.25}px` });
       // Im Standard-Layout (x 240, Schrift 14) enden die fünf Kästen genau mit dem Elo-Balken bei x 400
       const [w, h] = [size * 2.086, size * 1.4];
       for (const m of recent) {
         const color = m.result === 'W' ? style.positiveColor : style.negativeColor;
-        // Nur die Zahl ohne Vorzeichen, Sieg/Niederlage zeigt die Farbe. Ohne bekannte Elo-Änderung bleibt der Kasten leer.
-        const text = m.eloChange == null ? '' : String(Math.abs(m.eloChange));
+        // Nur die Zahl ohne Vorzeichen, Sieg/Niederlage zeigt die Farbe. Ohne bekannte Elo-Änderung ein Strich.
+        const text = m.eloChange == null ? '–' : String(Math.abs(m.eloChange));
         row.appendChild(
           el(
             'div',
