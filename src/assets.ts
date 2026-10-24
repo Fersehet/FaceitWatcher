@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 /**
  * Lädt Bilder von Faceit (Level-Symbole, Avatar, Avatar-Rahmen) einmal herunter und
- * liefert sie danach aus dem lokalen Cache. Overlay und Discord-Bot nutzen dieselben Dateien.
+ * liefert sie danach aus dem lokalen Cache. Editor und Overlay nutzen dieselben Dateien.
  * Die Bilder gehören Faceit und werden deshalb nicht im Repo mitgeliefert, sondern nur lokal zwischengespeichert.
  */
 export class AssetCache {

@@ -1,9 +1,6 @@
-# FaceitWatcher zu Hause hosten: Overlay-Server + Discord-Bot.
+# FaceitWatcher zu Hause hosten.
 # Start:  docker compose up -d --build
 # Logs:   docker compose logs -f
-#
-# Nur der Server fragt die Faceit-API ab. Der Bot liest die Matches vom Server
-# (http://faceitwatcher:3000) und postet sie in Discord.
 
 services:
   faceitwatcher:
@@ -22,16 +19,3 @@ services:
       - ./data:/app/data
       - ./website:/app/website:ro   # optional: Landingpage aus dem privaten Website-Repo
 
-  discord-bot:
-    image: faceitwatcher
-    container_name: faceitwatcher-bot
-    restart: unless-stopped
-    depends_on:
-      - faceitwatcher
-    command: ["node", "--disable-warning=ExperimentalWarning", "--import", "tsx", "src/bot/index.ts"]
-    env_file: .env
-    environment:
-      FACEITWATCHER_URL: http://faceitwatcher:3000
-      BOT_DATA_DIR: /app/data/bot
-    volumes:
-      - ./data:/app/data

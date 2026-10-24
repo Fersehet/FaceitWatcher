@@ -175,7 +175,7 @@ export class Tracker extends EventEmitter {
   private pending: { match: MatchResult; polls: number }[] = [];
 
   /**
-   * Erkennt neue Matches, speichert sie und meldet sie per "match"-Event (Overlay, Discord-Bot).
+   * Erkennt neue Matches, speichert sie und meldet sie per "match"-Event (Editor, Overlay).
    * Gemeldet wird erst, wenn die Elo-Änderung bekannt ist, spätestens nach ELO_WAIT_POLLS Abrufen (dann eloChange = null).
    * Beim allerersten Abruf werden die letzten Matches nur still gespeichert.
    */
