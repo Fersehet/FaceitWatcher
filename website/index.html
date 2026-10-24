@@ -66,58 +66,94 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 
 /* Hero */
 .hero { padding-block: 64px 48px; }
-.hero-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 48px; align-items: center; }
-@media (max-width: 960px) { .hero-grid { grid-template-columns: minmax(0, 1fr); gap: 36px; } }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 44px; }
+.hero-text { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 20px 48px; align-items: end; }
+.hero-text > :first-child { grid-column: 1 / -1; justify-self: start; }
+@media (max-width: 860px) { .hero-text { grid-template-columns: minmax(0, 1fr); } }
+.hero-text h1 { margin: 0; grid-row: span 2; }
 .hero h1 { font-size: clamp(38px, 5.6vw, 64px); margin-block: 18px 20px; }
 .hero h1 em { font-style: normal; color: var(--accent); }
 .hero .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
 .status { display: inline-flex; align-items: center; gap: 8px; font: 500 13px/1 var(--f-mono); color: var(--muted); border: 1px solid var(--line); padding: 7px 10px; border-radius: 999px; }
 .status i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); }
 
-/* Demo */
+/* Demo: nachgebaute Stream-Szene, darin das echte Overlay (render.js aus dem Tool) */
 .demo { background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; min-width: 0; }
 .demo-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--line); font: 500 12px/1 var(--f-mono); color: var(--muted); }
 .demo-bar .dots { display: flex; gap: 6px; }
 .demo-bar .dots span { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+.demo-bar .right { display: inline-flex; gap: 14px; align-items: center; }
+@media (max-width: 600px) { .demo-bar > span:nth-child(2) { display: none; } }
 .rec { color: var(--down); display: inline-flex; gap: 6px; align-items: center; }
 .rec::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--down); animation: blink 1.6s infinite; }
+.source { border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; }
+.source.live { color: var(--up); border-color: color-mix(in srgb, var(--up) 45%, var(--line)); }
 @keyframes blink { 50% { opacity: .25; } }
-.scene { position: relative; aspect-ratio: 16 / 9; max-width: 100%; overflow: hidden; display: flex; padding: 4%; transition: background .3s; }
-.scene.game { background:
-  radial-gradient(120% 70% at 70% 110%, #3d2c1f 0%, transparent 60%),
-  radial-gradient(60% 50% at 20% 30%, #6b7f8f55 0%, transparent 70%),
-  linear-gradient(180deg, #8ea3b3 0%, #b9a98a 42%, #6d5a43 43%, #3c3127 100%); }
-.scene.game::after { content: ""; position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; transform: translate(-50%, -50%);
-  background: linear-gradient(#5dff9c, #5dff9c) center/2px 100% no-repeat, linear-gradient(#5dff9c, #5dff9c) center/100% 2px no-repeat; opacity: .9; }
-.scene.alpha { background: repeating-conic-gradient(#2b3140 0 25%, #222836 0 50%) 0 0 / 22px 22px; }
-.scene.pos-tl { align-items: flex-start; justify-content: flex-start; }
-.scene.pos-tr { align-items: flex-start; justify-content: flex-end; }
-.scene.pos-bl { align-items: flex-end; justify-content: flex-start; }
-.scene.pos-br { align-items: flex-end; justify-content: flex-end; }
-.scene-label { position: absolute; right: 10px; bottom: 8px; font: 500 11px/1 var(--f-mono); color: #ffffffb0; background: #00000066; padding: 5px 7px; border-radius: 4px; z-index: 2; }
 
-/* The overlay widget itself */
-.ov { --ov-accent: var(--accent); position: relative; z-index: 1; display: flex; gap: 10px; align-items: stretch; padding: 10px; border-radius: 10px; background: rgba(10, 12, 18, .78); color: #f3f5fa; font-family: var(--ov-font, var(--f-overlay)); box-shadow: 0 8px 30px rgba(0,0,0,.35); max-width: 100%; font-size: clamp(10px, 1.45vw, 15px); transition: border-color .2s; border: 1px solid color-mix(in srgb, var(--ov-accent) 45%, transparent); }
-.ov.vertical { flex-direction: column; }
-.ov [data-stat][hidden] { display: none !important; }
-.lvl { width: 3.1em; aspect-ratio: 1; flex: none; border-radius: 50%; display: grid; place-items: center; font: 700 1.35em/1 var(--f-mono); color: var(--ov-accent);
-  background: conic-gradient(var(--ov-accent) 0 var(--lvl-pct, 70%), #ffffff22 0); position: relative; }
-.lvl::before { content: ""; position: absolute; inset: .22em; border-radius: 50%; background: #0c0f16; }
-.lvl span { position: relative; }
-.ov.vertical .lvl { align-self: flex-start; }
-.ov-main { display: flex; flex-direction: column; justify-content: center; gap: .15em; min-width: 0; }
-.ov-name { font-weight: 600; font-size: .85em; color: #c8cfdd; letter-spacing: .03em; }
-.ov-elo { font: 700 1.9em/1 var(--f-mono); display: flex; align-items: baseline; gap: .35em; }
-.ov-elo small { font-size: .42em; color: #9aa5ba; letter-spacing: .1em; }
-.ov-cells { display: flex; gap: .4em; flex-wrap: wrap; align-items: stretch; }
-.cell { background: #ffffff10; border-radius: 6px; padding: .45em .65em; display: flex; flex-direction: column; justify-content: center; gap: .2em; }
-.cell b { font: 700 1.1em/1 var(--f-mono); font-variant-numeric: tabular-nums; }
-.cell span { font-size: .62em; letter-spacing: .12em; text-transform: uppercase; color: #9aa5ba; }
-.up { color: var(--up); } .down { color: var(--down); }
-.form { display: flex; gap: .2em; }
-.form i { width: 1.25em; height: 1.25em; border-radius: 3px; display: grid; place-items: center; font: 700 .7em/1 var(--f-mono); font-style: normal; }
-.form .w { background: color-mix(in srgb, var(--up) 30%, transparent); color: var(--up); }
-.form .l { background: color-mix(in srgb, var(--down) 30%, transparent); color: var(--down); }
+.stream { position: relative; aspect-ratio: 16 / 9; overflow: hidden; container-type: inline-size; background: #07080b; font-family: var(--f-body); }
+.game { position: absolute; inset: 0 25% 0 0; overflow: hidden; }
+.world { position: absolute; inset: -3%; animation: sway 9s ease-in-out infinite alternate; }
+@keyframes sway { 0% { transform: translate(0, 0); } 35% { transform: translate(-1.2%, .4%); } 70% { transform: translate(.8%, -.3%); } 100% { transform: translate(1.4%, .5%); } }
+.sky { position: absolute; inset: 0 0 55%; background: linear-gradient(180deg, #6f8fae 0%, #b8c7cf 70%, #d9cfb4 100%); }
+.wall { position: absolute; left: 0; right: 0; top: 24%; bottom: 34%; background:
+  repeating-linear-gradient(0deg, transparent 0 11%, rgba(80, 55, 25, .28) 11% 12%),
+  repeating-linear-gradient(90deg, transparent 0 9%, rgba(80, 55, 25, .2) 9% 9.4%),
+  linear-gradient(180deg, #d8b884, #b8925c); }
+.wall.far { left: 52%; top: 32%; bottom: 36%; background: linear-gradient(180deg, #c9a874, #a5814d); filter: brightness(.85); }
+.door { position: absolute; left: 22%; width: 17%; top: 38%; bottom: 34%; background: linear-gradient(180deg, #2a2016, #120d08); border-radius: 50% 50% 0 0 / 22% 22% 0 0; box-shadow: inset 0 0 0 .5cqw #9a774a; }
+.crate { position: absolute; left: 60%; width: 14%; aspect-ratio: 1; bottom: 26%; background:
+  linear-gradient(45deg, transparent 47%, #5c4024 47% 53%, transparent 53%),
+  repeating-linear-gradient(0deg, #8a6236 0 18%, #6f4c28 18% 20%); border: .5cqw solid #5c4024; }
+.floor { position: absolute; left: 0; right: 0; bottom: 0; height: 36%; background: linear-gradient(180deg, #a98858 0%, #7b6040 60%, #4a3a27 100%); }
+.floor::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(100deg, transparent 0 14%, rgba(0, 0, 0, .06) 14% 15%); }
+.xhair { position: absolute; left: 50%; top: 50%; width: 2.2cqw; aspect-ratio: 1; transform: translate(-50%, -50%); z-index: 2;
+  background: linear-gradient(#5dff9c, #5dff9c) center/2px 100% no-repeat, linear-gradient(#5dff9c, #5dff9c) center/100% 2px no-repeat; }
+.gun { position: absolute; right: 0; bottom: -1%; width: 40%; z-index: 2; filter: drop-shadow(0 0 1cqw rgba(0, 0, 0, .4)); animation: breathe 3.2s ease-in-out infinite; }
+@keyframes breathe { 50% { transform: translateY(2%); } }
+.gun.fire { animation: recoil .18s ease-out 3; }
+@keyframes recoil { 40% { transform: translate(1.5%, 4%) rotate(-1.5deg); } }
+.hud { position: absolute; z-index: 3; color: #fff; font: 700 2cqw/1 var(--f-mono); text-shadow: 0 0 .6cqw rgba(0, 0, 0, .7); display: flex; gap: 2cqw; align-items: baseline; }
+.hud small { font-size: .55em; opacity: .7; margin-right: .4em; }
+.hud.hp { left: 50%; bottom: 3%; transform: translateX(-50%); }
+.hud.ammo { right: 3%; bottom: 3%; }
+.killfeed { position: absolute; right: 2%; top: 3%; z-index: 3; display: grid; gap: .5cqw; justify-items: end; }
+.killfeed div { font: 600 1.15cqw/1 var(--f-body); color: #fff; background: rgba(0, 0, 0, .55); padding: .5cqw .8cqw; border-radius: .3cqw; animation: rise .3s ease; }
+.killfeed .ct { color: #8fc3ff; } .killfeed .t { color: #ffd27a; }
+.killfeed .me { box-shadow: inset 0 0 0 1px #e33; }
+
+.slot { position: absolute; z-index: 4; transition: left .45s cubic-bezier(.5, 0, .2, 1), top .45s cubic-bezier(.5, 0, .2, 1); left: 2.5%; top: 4%; }
+.stream.pos-tr .slot { left: calc(97.5% - var(--sw, 0px)); }
+.stream.pos-br .slot { left: calc(97.5% - var(--sw, 0px)); top: calc(86% - var(--sh, 0px)); }
+.slot-inner { transform-origin: 0 0; }
+.stream.pos-tr .killfeed { opacity: 0; }
+
+.cam { position: absolute; left: 2.2%; bottom: 4%; width: 24%; aspect-ratio: 4 / 3; z-index: 4; border-radius: .8cqw; overflow: hidden; border: .3cqw solid var(--accent); box-shadow: 0 1cqw 3cqw rgba(0, 0, 0, .5);
+  background: radial-gradient(70% 60% at 30% 20%, #2c3550, transparent 70%), linear-gradient(180deg, #1a1f30, #0e1019); }
+.cam::before { content: ""; position: absolute; left: 0; right: 0; top: 18%; height: 3%; background: var(--accent); filter: blur(.4cqw); opacity: .7; }
+.cam svg { position: absolute; left: 50%; bottom: -4%; width: 78%; transform: translateX(-50%); animation: bob 4s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateX(-50%) translateY(2%) rotate(-1deg); } }
+.cam .tag { position: absolute; left: 4%; bottom: 5%; font: 700 1.1cqw/1 var(--f-display); color: #fff; background: rgba(0, 0, 0, .55); padding: .4cqw .7cqw; border-radius: .3cqw; letter-spacing: .05em; }
+.cam .tag i { display: inline-block; width: .7cqw; height: .7cqw; border-radius: 50%; background: #e33; margin-right: .5cqw; animation: blink 1.6s infinite; }
+
+.chat { position: absolute; top: 0; right: 0; bottom: 0; width: 25%; z-index: 4; background: #101218; border-left: 1px solid #22262f; display: flex; flex-direction: column; }
+.chat-head { padding: 1.2cqw 1.4cqw; font: 700 1.1cqw/1 var(--f-mono); letter-spacing: .12em; color: #8a93a6; border-bottom: 1px solid #22262f; display: flex; justify-content: space-between; }
+.chat-head b { color: #e33; font-weight: 700; }
+.chat-list { flex: 1; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; gap: .7cqw; padding: 1.2cqw 1.4cqw; font: 500 1.3cqw/1.35 var(--f-body); color: #d5dae4; }
+.chat-list p { margin: 0; animation: rise .3s ease; overflow-wrap: anywhere; }
+.chat-list b { font-weight: 700; }
+.chat-list .hl { background: color-mix(in srgb, var(--accent) 18%, transparent); border-left: .3cqw solid var(--accent); padding: .4cqw .6cqw; border-radius: .3cqw; }
+.chat-input { margin: 1cqw 1.2cqw 1.2cqw; padding: 1cqw; border-radius: .5cqw; background: #1a1d25; color: #6d7586; font: 500 1.2cqw/1 var(--f-body); }
+
+.alert { position: absolute; left: 37.5%; top: 6%; z-index: 5; transform: translate(-50%, -150%); opacity: 0; transition: transform .5s cubic-bezier(.3, 1.4, .5, 1), opacity .3s;
+  background: rgba(12, 14, 20, .9); border: 1px solid var(--accent); border-radius: .8cqw; padding: 1cqw 1.8cqw; text-align: center; color: #fff; font: 600 1.4cqw/1.3 var(--f-display); box-shadow: 0 0 3cqw var(--glow); }
+.alert small { display: block; font: 600 1cqw/1 var(--f-mono); color: var(--accent); letter-spacing: .14em; margin-bottom: .4cqw; }
+.alert.on { transform: translate(-50%, 0); opacity: 1; }
+
+.stream.alpha { background: repeating-conic-gradient(#2b3140 0 25%, #222836 0 50%) 0 0 / 22px 22px; }
+.stream.alpha .world, .stream.alpha .cam, .stream.alpha .chat, .stream.alpha .hud, .stream.alpha .killfeed, .stream.alpha .alert, .stream.alpha .xhair, .stream.alpha .gun { visibility: hidden; }
+.stream.alpha .game { right: 0; }
+.scene-label { position: absolute; left: 50%; transform: translateX(-50%); bottom: 1.5%; font: 500 11px/1 var(--f-mono); color: #ffffffb0; background: #00000066; padding: 5px 7px; border-radius: 4px; z-index: 6; white-space: nowrap; }
+.stream:not(.alpha) .scene-label { display: none; }
 
 /* Controls */
 .controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px 24px; padding: 18px; border-top: 1px solid var(--line); }
@@ -285,17 +321,6 @@ details[open] p { animation: rise .35s ease; }
 .chart.in #area { opacity: 1; }
 .chart.in circle { opacity: 1; transform: none; }
 
-/* Live-Simulation im Overlay */
-.ov-elo { position: relative; }
-.ov-elo .delta { position: absolute; left: 100%; top: -.2em; margin-left: .3em; font: 700 .45em/1 var(--f-mono); font-style: normal; opacity: 0; pointer-events: none; }
-.ov-elo .delta.go { animation: floatup 1.4s ease-out forwards; }
-@keyframes floatup { 0% { opacity: 0; transform: translateY(6px); } 20% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-14px); } }
-.lvl { transition: --lvl-pct .8s; }
-@property --lvl-pct { syntax: "<percentage>"; inherits: false; initial-value: 70%; }
-.form i { transition: transform .35s cubic-bezier(.3, 1.6, .5, 1), opacity .35s; }
-.form i.new { opacity: 0; transform: scale(.3); }
-.ov.flash { animation: flash .9s ease; }
-@keyframes flash { 30% { box-shadow: 0 0 0 2px var(--ov-accent), 0 0 28px color-mix(in srgb, var(--ov-accent) 60%, transparent); } }
 .demo { transition: opacity .7s ease, transform .7s cubic-bezier(.2, .7, .2, 1), box-shadow .4s; }
 .demo:hover { box-shadow: 0 20px 60px rgba(0, 0, 0, .45), 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent); }
 
@@ -348,7 +373,7 @@ details[open] p { animation: rise .35s ease; }
 <header class="hero" id="top">
   <div class="hero-bg" aria-hidden="true"><span class="orb"></span><span class="orb two"></span></div>
   <div class="wrap hero-grid">
-    <div>
+    <div class="hero-text">
       <span class="status" data-hero style="--d:0"><i></i>In Entwicklung · Open Source</span>
       <h1 data-hero style="--d:1">Dein Faceit-Elo live im Stream. <em>Genau so, wie du es willst.</em></h1>
       <p class="lead" data-hero style="--d:2">FaceitWatcher baut dir ein Elo- und Profil-Overlay für OBS. Du entscheidest, welche Werte zu sehen sind, wo sie sitzen und wie sie aussehen. Dein Match-Verlauf wird nebenbei lokal gespeichert.</p>
@@ -358,67 +383,79 @@ details[open] p { animation: rise .35s ease; }
       </div>
     </div>
 
-    <div class="demo" data-hero style="--d:2" aria-label="Interaktive Vorschau des Overlays">
+    <div class="demo" data-hero style="--d:3" aria-label="Interaktive Vorschau: Stream-Szene mit dem echten Overlay">
       <div class="demo-bar">
         <span class="dots"><span></span><span></span><span></span></span>
-        <span>Overlay-Editor · Vorschau</span>
-        <span class="rec">LIVE</span>
+        <span>OBS · Szene „Faceit Ranked“</span>
+        <span class="right"><span class="source" id="dataSource">Beispieldaten</span><span class="rec">LIVE</span></span>
       </div>
-      <div class="scene game pos-tl" id="scene">
-        <div class="ov" id="ov">
-          <div class="lvl" data-stat="level" id="ovLvl" style="--lvl-pct: 70%"><span>8</span></div>
-          <div class="ov-main">
-            <div class="ov-name" data-stat="name">s1mpleFan_92</div>
-            <div class="ov-elo" data-stat="elo"><span id="ovElo">1.684</span><small>ELO</small><em class="delta" id="ovDelta"></em></div>
+      <div class="stream pos-tl" id="scene">
+        <div class="game">
+          <div class="world" aria-hidden="true">
+            <div class="sky"></div><div class="wall"></div><div class="wall far"></div><div class="door"></div><div class="floor"></div><div class="crate"></div>
           </div>
-          <div class="ov-cells">
-            <div class="cell" data-stat="today"><b class="up" id="ovToday">+25</b><span>Elo heute</span></div>
-            <div class="cell" data-stat="session"><b id="ovWL">4–2</b><span>Heute W/L</span></div>
-            <div class="cell" data-stat="kd"><b>1,24</b><span>K/D</span></div>
-            <div class="cell" data-stat="winrate" hidden><b>54 %</b><span>Winrate</span></div>
-            <div class="cell" data-stat="hs" hidden><b>48 %</b><span>HS-Quote</span></div>
-            <div class="cell" data-stat="form"><span class="form" id="ovForm"><i class="w">W</i><i class="w">W</i><i class="l">L</i><i class="w">W</i><i class="l">L</i></span><span>Letzte 5</span></div>
-          </div>
+          <span class="xhair" aria-hidden="true"></span>
+          <svg class="gun" id="gun" viewBox="0 0 300 170" aria-hidden="true">
+            <path d="M300 170 L300 118 L232 96 L150 72 L58 50 L52 60 L140 86 L150 104 L204 124 L226 170 Z" fill="#202329"/>
+            <path d="M150 72 L232 96 L238 86 L156 62 Z" fill="#3a3f48"/>
+            <path d="M30 42 L60 49 L58 56 L28 50 Z" fill="#15171b"/>
+            <path d="M84 58 L148 75 L146 92 L88 74 Z" fill="#b88a55"/>
+            <path d="M172 104 L204 116 L190 162 L160 150 Z" fill="#17191d"/>
+            <ellipse cx="250" cy="146" rx="46" ry="30" fill="#2c313a"/>
+            <ellipse cx="128" cy="90" rx="26" ry="14" fill="#2c313a" transform="rotate(18 128 90)"/>
+          </svg>
+          <div class="killfeed" id="killfeed" aria-hidden="true"></div>
+          <div class="hud hp" aria-hidden="true"><span><small>HP</small>100</span><span><small>ARMOR</small>100</span></div>
+          <div class="hud ammo" aria-hidden="true"><span id="ammo">30</span><small>/ 90</small></div>
+          <div class="slot" id="slot"><div class="slot-inner" id="overlay"></div></div>
         </div>
-        <span class="scene-label" id="sceneLabel">OBS-Szene · 1920×1080</span>
+        <div class="cam" aria-hidden="true">
+          <svg viewBox="0 0 200 170">
+            <path d="M20 170 C24 120 60 104 100 104 C140 104 176 120 180 170 Z" fill="#2a2f3d"/>
+            <rect x="86" y="88" width="28" height="22" rx="8" fill="#c99a7c"/>
+            <ellipse cx="100" cy="64" rx="30" ry="36" fill="#d8a888"/>
+            <path d="M68 58 C66 26 134 26 132 58 C126 40 74 40 68 58 Z" fill="#2b1d14"/>
+            <path d="M62 64 C60 22 140 22 138 64" fill="none" stroke="#111" stroke-width="7"/>
+            <rect x="54" y="54" width="14" height="26" rx="6" fill="#111"/><rect x="132" y="54" width="14" height="26" rx="6" fill="#111"/>
+            <path d="M60 78 C64 96 80 98 90 92" fill="none" stroke="#111" stroke-width="4"/>
+            <rect x="54" y="56" width="4" height="22" fill="var(--accent)"/><rect x="142" y="56" width="4" height="22" fill="var(--accent)"/>
+          </svg>
+          <span class="tag"><i></i>CAM</span>
+        </div>
+        <div class="chat" aria-hidden="true">
+          <div class="chat-head">STREAM-CHAT <b>● 1.204</b></div>
+          <div class="chat-list" id="chat"></div>
+          <div class="chat-input">Nachricht senden…</div>
+        </div>
+        <div class="alert" id="alert" aria-hidden="true"><small>NEUER FOLLOWER</small><span id="alertName"></span></div>
+        <span class="scene-label">Nur die Browserquelle · transparent</span>
       </div>
       <div class="controls">
         <div>
           <div class="ctl-title">Werte ein/aus</div>
-          <div class="chips" id="statChips">
-            <button class="chip" type="button" id="t-level" data-toggle="level" aria-pressed="true">Level</button>
-            <button class="chip" type="button" id="t-name" data-toggle="name" aria-pressed="true">Name</button>
-            <button class="chip" type="button" id="t-elo" data-toggle="elo" aria-pressed="true">Elo</button>
-            <button class="chip" type="button" id="t-today" data-toggle="today" aria-pressed="true">Elo heute</button>
-            <button class="chip" type="button" id="t-session" data-toggle="session" aria-pressed="true">W/L heute</button>
-            <button class="chip" type="button" id="t-kd" data-toggle="kd" aria-pressed="true">K/D</button>
-            <button class="chip" type="button" id="t-winrate" data-toggle="winrate" aria-pressed="false">Winrate</button>
-            <button class="chip" type="button" id="t-hs" data-toggle="hs" aria-pressed="false">HS-Quote</button>
-            <button class="chip" type="button" id="t-form" data-toggle="form" aria-pressed="true">Letzte 5</button>
-          </div>
+          <div class="chips" id="statChips"></div>
         </div>
         <div style="display:grid; gap:18px;">
           <div>
             <div class="ctl-title">Akzentfarbe</div>
             <div class="swatches" id="swatches">
-              <button class="sw" type="button" id="c-orange" style="--c:#ff5500" data-color="#ff5500" aria-label="Orange" aria-pressed="true"></button>
-              <button class="sw" type="button" id="c-cyan" style="--c:#4cc9f0" data-color="#4cc9f0" aria-label="Cyan" aria-pressed="false"></button>
-              <button class="sw" type="button" id="c-pink" style="--c:#ff5d9e" data-color="#ff5d9e" aria-label="Pink" aria-pressed="false"></button>
-              <button class="sw" type="button" id="c-lime" style="--c:#a3e635" data-color="#a3e635" aria-label="Limette" aria-pressed="false"></button>
-              <button class="sw" type="button" id="c-white" style="--c:#f3f5fa" data-color="#f3f5fa" aria-label="Weiß" aria-pressed="false"></button>
+              <button class="sw" type="button" style="--c:#ff5500" data-color="#ff5500" aria-label="Orange" aria-pressed="true"></button>
+              <button class="sw" type="button" style="--c:#4cc9f0" data-color="#4cc9f0" aria-label="Cyan" aria-pressed="false"></button>
+              <button class="sw" type="button" style="--c:#ff5d9e" data-color="#ff5d9e" aria-label="Pink" aria-pressed="false"></button>
+              <button class="sw" type="button" style="--c:#a3e635" data-color="#a3e635" aria-label="Limette" aria-pressed="false"></button>
+              <button class="sw" type="button" style="--c:#f3f5fa" data-color="#f3f5fa" aria-label="Weiß" aria-pressed="false"></button>
             </div>
           </div>
           <div>
-            <div class="ctl-title">Layout &amp; Hintergrund</div>
+            <div class="ctl-title">Position &amp; Ansicht</div>
             <div class="chips">
-              <button class="chip" type="button" id="l-vertical" aria-pressed="false">Vertikal</button>
               <button class="chip" type="button" id="l-pos" aria-pressed="false">Ecke: oben links</button>
-              <button class="chip" type="button" id="l-alpha" aria-pressed="false">Transparent zeigen</button>
+              <button class="chip" type="button" id="l-alpha" aria-pressed="false">Nur Browserquelle</button>
             </div>
           </div>
         </div>
       </div>
-      <p class="demo-note">Probier es aus. Alle Werte hier sind Beispieldaten.</p>
+      <p class="demo-note" id="demoNote">Das Overlay hier zeichnet derselbe Renderer wie die OBS-Browserquelle. Probier es aus.</p>
     </div>
   </div>
 </header>
@@ -542,9 +579,6 @@ details[open] p { animation: rise .35s ease; }
 
 <script>
 (function () {
-  var ov = document.getElementById('ov');
-  var scene = document.getElementById('scene');
-
   var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // Ladebildschirm: Logo baut sich auf, Balken folgt dem Laden, dann verschwimmt alles in die Seite
@@ -568,66 +602,6 @@ details[open] p { animation: rise .35s ease; }
   document.fonts && document.fonts.ready.then(function () { setBar(.8); });
   if (document.readyState === 'complete') finish(); else window.addEventListener('load', finish);
   setTimeout(finish, 4000);
-
-  // Kurzer Loader in der Vorschau, wenn sie Änderungen übernimmt
-
-  var sceneLoader = document.createElement('div');
-  sceneLoader.className = 'fw-loader';
-  sceneLoader.innerHTML = '<img src="logo.svg" alt="">';
-  scene.append(sceneLoader);
-  var sceneTimer;
-  var pulse = function () {
-    sceneLoader.classList.add('on');
-    clearTimeout(sceneTimer);
-    sceneTimer = setTimeout(function () { sceneLoader.classList.remove('on'); }, 450);
-  };
-  document.querySelectorAll('[data-toggle], .sw, #l-vertical, #l-pos, #l-alpha').forEach(function (b) {
-    b.addEventListener('click', pulse);
-  });
-
-  document.querySelectorAll('[data-toggle]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var on = btn.getAttribute('aria-pressed') !== 'true';
-      btn.setAttribute('aria-pressed', String(on));
-      var el = ov.querySelector('[data-stat="' + btn.dataset.toggle + '"]');
-      if (el) el.hidden = !on;
-    });
-  });
-
-  document.querySelectorAll('.sw').forEach(function (sw) {
-    sw.addEventListener('click', function () {
-      document.querySelectorAll('.sw').forEach(function (s) { s.setAttribute('aria-pressed', 'false'); });
-      sw.setAttribute('aria-pressed', 'true');
-      ov.style.setProperty('--ov-accent', sw.dataset.color);
-    });
-  });
-
-  var vBtn = document.getElementById('l-vertical');
-  vBtn.addEventListener('click', function () {
-    var on = vBtn.getAttribute('aria-pressed') !== 'true';
-    vBtn.setAttribute('aria-pressed', String(on));
-    ov.classList.toggle('vertical', on);
-  });
-
-  var corners = [['pos-tl', 'oben links'], ['pos-tr', 'oben rechts'], ['pos-br', 'unten rechts'], ['pos-bl', 'unten links']];
-  var ci = 0;
-  var pBtn = document.getElementById('l-pos');
-  pBtn.addEventListener('click', function () {
-    scene.classList.remove(corners[ci][0]);
-    ci = (ci + 1) % corners.length;
-    scene.classList.add(corners[ci][0]);
-    pBtn.textContent = 'Ecke: ' + corners[ci][1];
-  });
-
-  var aBtn = document.getElementById('l-alpha');
-  var label = document.getElementById('sceneLabel');
-  aBtn.addEventListener('click', function () {
-    var on = aBtn.getAttribute('aria-pressed') !== 'true';
-    aBtn.setAttribute('aria-pressed', String(on));
-    scene.classList.toggle('alpha', on);
-    scene.classList.toggle('game', !on);
-    label.textContent = on ? 'Browserquelle · transparent' : 'OBS-Szene · 1920×1080';
-  });
 
   document.getElementById('copyBtn').addEventListener('click', function () {
     var btn = this, text = document.getElementById('obsUrl').textContent;
@@ -739,48 +713,214 @@ details[open] p { animation: rise .35s ease; }
     });
   });
 
-  // Vorschau spielt Matches: Elo, Tagesbilanz und Form ändern sich wie im echten Overlay
-  var state = { elo: 1684, today: 25, w: 4, l: 2 };
-  var ovElo = document.getElementById('ovElo'), ovDelta = document.getElementById('ovDelta');
-  var ovToday = document.getElementById('ovToday'), ovWL = document.getElementById('ovWL');
-  var ovForm = document.getElementById('ovForm'), ovLvl = document.getElementById('ovLvl');
-  var heroVisible = true;
-  if ('IntersectionObserver' in window) {
-    new IntersectionObserver(function (e) { heroVisible = e[0].isIntersecting; }).observe(scene);
-  }
-  var playMatch = function () {
-    if (!heroVisible || document.hidden || !document.body.classList.contains('ready')) return;
-    var win = state.elo > 1725 ? false : state.elo < 1560 ? true : Math.random() < .6;
-    var delta = (win ? 1 : -1) * (21 + Math.floor(Math.random() * 6));
-    var from = state.elo;
-    state.elo += delta; state.today += delta;
-    if (win) state.w++; else state.l++;
-    var t0 = performance.now();
-    (function tick(now) {
-      var k = Math.min(1, (now - t0) / 900);
-      ovElo.textContent = fmt(from + delta * (1 - Math.pow(1 - k, 3)));
-      if (k < 1) requestAnimationFrame(tick);
-    })(t0);
-    ovDelta.textContent = (delta > 0 ? '+' : '') + delta;
-    ovDelta.className = 'delta ' + (win ? 'up' : 'down');
-    void ovDelta.offsetWidth;
-    ovDelta.classList.add('go');
-    ovToday.textContent = (state.today >= 0 ? '+' : '') + state.today;
-    ovToday.className = state.today >= 0 ? 'up' : 'down';
-    ovWL.textContent = state.w + '–' + state.l;
-    ovLvl.style.setProperty('--lvl-pct', Math.round((state.elo - 1531) / 219 * 100) + '%');
-    var i = document.createElement('i');
-    i.className = (win ? 'w' : 'l') + ' new';
-    i.textContent = win ? 'W' : 'L';
-    ovForm.firstElementChild.remove();
-    ovForm.append(i);
-    requestAnimationFrame(function () { requestAnimationFrame(function () { i.classList.remove('new'); }); });
-    ov.classList.remove('flash');
-    void ov.offsetWidth;
-    ov.classList.add('flash');
-  };
-  if (!reduced) setInterval(playMatch, 5200);
 })();
+</script>
+<script type="module">
+// Vorschau mit dem echten Overlay: derselbe Renderer wie die OBS-Browserquelle (js/render.js aus dem Tool).
+// Auf dem FaceitWatcher-Server kommen Overlay und Werte live aus live.json, sonst Beispieldaten aus demo.json.
+import { renderOverlay } from './js/render.js';
+
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const scene = document.getElementById('scene');
+const slot = document.getElementById('slot');
+const container = document.getElementById('overlay');
+const TOGGLES = ['avatar', 'nickname', 'level', 'elo', 'eloProgress', 'eloToday', 'sessionRecord', 'kd', 'winRate', 'hsPercent', 'recentResults'];
+
+let overlay, state, live = false;
+
+async function load(url) {
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error(res.status);
+  const data = await res.json();
+  if (!data.overlay || !data.state) throw new Error('leer');
+  return data;
+}
+
+try {
+  ({ overlay, state } = await load('live.json'));
+  live = true;
+} catch {
+  ({ overlay, state } = await load('demo.json'));
+}
+
+const source = document.getElementById('dataSource');
+if (live) {
+  source.textContent = state.demo ? 'Server · Demo-Modus' : 'Live-Daten';
+  source.classList.toggle('live', !state.demo);
+  document.getElementById('demoNote').textContent = 'Das ist das echte Overlay vom FaceitWatcher-Server mit den aktuellen Werten. Deine Änderungen hier bleiben nur in dieser Vorschau.';
+}
+
+// Kurzer Ladebildschirm in der Vorschau, wenn sich etwas ändert
+const loader = document.createElement('div');
+loader.className = 'fw-loader';
+loader.innerHTML = '<img src="logo.svg" alt="">';
+scene.append(loader);
+let loaderTimer;
+const pulse = () => {
+  loader.classList.add('on');
+  clearTimeout(loaderTimer);
+  loaderTimer = setTimeout(() => loader.classList.remove('on'), 450);
+};
+
+function draw() {
+  renderOverlay(container, overlay, state);
+  fit();
+}
+
+// Overlay passend zur Szenengröße skalieren
+function fit() {
+  const game = scene.querySelector('.game').clientWidth;
+  const scale = Math.min(1.2, (game * 0.44) / overlay.style.width);
+  container.style.transform = `scale(${scale})`;
+  const w = overlay.style.width * scale, h = overlay.style.height * scale;
+  slot.style.width = `${w}px`;
+  slot.style.height = `${h}px`;
+  scene.style.setProperty('--sw', `${w}px`);
+  scene.style.setProperty('--sh', `${h}px`);
+}
+new ResizeObserver(fit).observe(scene);
+
+// Schalter aus den echten Widgets des Overlays
+const chips = document.getElementById('statChips');
+for (const type of TOGGLES) {
+  const widget = overlay.widgets.find((w) => w.type === type);
+  if (!widget) continue;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'chip';
+  btn.textContent = widget.label;
+  btn.setAttribute('aria-pressed', String(widget.enabled));
+  btn.addEventListener('click', () => {
+    widget.enabled = !widget.enabled;
+    btn.setAttribute('aria-pressed', String(widget.enabled));
+    pulse();
+    draw();
+  });
+  chips.append(btn);
+}
+
+const swatches = document.querySelectorAll('.sw');
+const ownAccent = overlay.style.accentColor.toLowerCase();
+if (![...swatches].some((s) => s.dataset.color === ownAccent)) {
+  swatches[0].dataset.color = ownAccent;
+  swatches[0].style.setProperty('--c', ownAccent);
+  swatches[0].setAttribute('aria-label', 'Farbe aus deinem Overlay');
+}
+swatches.forEach((sw) => {
+  sw.setAttribute('aria-pressed', String(sw.dataset.color === ownAccent));
+  sw.addEventListener('click', () => {
+    swatches.forEach((s) => s.setAttribute('aria-pressed', 'false'));
+    sw.setAttribute('aria-pressed', 'true');
+    overlay.style.accentColor = sw.dataset.color;
+    if (overlay.style.borderWidth) overlay.style.borderColor = sw.dataset.color;
+    pulse();
+    draw();
+  });
+});
+
+const corners = [['pos-tl', 'oben links'], ['pos-tr', 'oben rechts'], ['pos-br', 'unten rechts']];
+let ci = 0;
+const pBtn = document.getElementById('l-pos');
+pBtn.addEventListener('click', () => {
+  scene.classList.remove(corners[ci][0]);
+  ci = (ci + 1) % corners.length;
+  scene.classList.add(corners[ci][0]);
+  pBtn.textContent = `Ecke: ${corners[ci][1]}`;
+});
+
+const aBtn = document.getElementById('l-alpha');
+aBtn.addEventListener('click', () => {
+  const on = aBtn.getAttribute('aria-pressed') !== 'true';
+  aBtn.setAttribute('aria-pressed', String(on));
+  scene.classList.toggle('alpha', on);
+  pulse();
+});
+
+draw();
+
+// Chat, Killfeed und Follower-Alarm halten die Szene lebendig
+const chat = document.getElementById('chat');
+const NAMES = [['ancientEnjoyer', '#7dd3fc'], ['xX_awp_Xx', '#f472b6'], ['mirage_mama', '#a3e635'], ['brotkasten', '#fbbf24'], ['eco_round', '#c4b5fd'], ['nadeking', '#5eead4'], ['flick_ingo', '#fca5a5']];
+const LINES = ['wie viel elo noch bis lvl 10?', 'das overlay ist clean', 'ONE TAP 😳', 'eco runde?', 'ggwp', 'welche sens spielst du', 'smoke mid bitte', 'lets gooo', 'der crosshair 🔥', '!elo', 'clutch incoming', 'HS-Quote ist crazy'];
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+function say(text, highlight = false, who = pick(NAMES)) {
+  const p = document.createElement('p');
+  if (highlight) p.className = 'hl';
+  const b = document.createElement('b');
+  b.style.color = who[1];
+  b.textContent = `${who[0]}: `;
+  p.append(b, text);
+  chat.append(p);
+  while (chat.children.length > 12) chat.firstElementChild.remove();
+}
+for (let i = 0; i < 6; i++) say(pick(LINES));
+
+const killfeed = document.getElementById('killfeed');
+function kill(me) {
+  const d = document.createElement('div');
+  const killer = me ? (state.player?.nickname ?? 'Du') : pick(['s1mple_jr', 'ropz_fan', 'kRYSTAL']);
+  d.innerHTML = `<span class="${me ? 'ct' : 't'}"></span> ⌖ <span class="${me ? 't' : 'ct'}"></span>`;
+  d.children[0].textContent = killer;
+  d.children[1].textContent = pick(['Bot Ivan', 'n0name', 'dust2king', 'lurker99']);
+  if (me) d.classList.add('me');
+  killfeed.prepend(d);
+  while (killfeed.children.length > 3) killfeed.lastElementChild.remove();
+  if (me) {
+    const gun = document.getElementById('gun');
+    gun.classList.remove('fire');
+    void gun.offsetWidth;
+    gun.classList.add('fire');
+    const ammo = document.getElementById('ammo');
+    ammo.textContent = Math.max(1, Number(ammo.textContent) - 3);
+  }
+}
+
+const alertBox = document.getElementById('alert');
+function follow() {
+  document.getElementById('alertName').textContent = pick(['headshot_hanna', 'clutchminister', 'smokecriminal', 'pixelpeek']);
+  alertBox.classList.add('on');
+  setTimeout(() => alertBox.classList.remove('on'), 2600);
+}
+
+// Ohne Server: Matches durchspielen, damit sich das Overlay wie im Stream verändert
+function playMatch() {
+  const p = state.player, s = state.session;
+  if (!p || !s) return;
+  const win = p.elo > 1730 ? false : p.elo < 1560 ? true : Math.random() < 0.6;
+  const delta = (win ? 1 : -1) * (21 + Math.floor(Math.random() * 6));
+  p.elo += delta;
+  p.level = p.elo >= 1751 ? 9 : p.elo >= 1531 ? 8 : 7;
+  p.matches += 1;
+  p.recentResults = [win ? 'W' : 'L', ...p.recentResults].slice(0, 5);
+  s.eloChange += delta;
+  s.matches += 1;
+  if (win) s.wins += 1; else s.losses += 1;
+  draw();
+  say(win ? `GG! ${delta > 0 ? '+' : ''}${delta} Elo 🔥` : `unlucky, ${delta} Elo 😭`, true);
+}
+
+if (!reduced) {
+  let tick = 0;
+  setInterval(() => {
+    if (document.hidden) return;
+    tick++;
+    say(pick(LINES));
+    if (tick % 3 === 0) kill(Math.random() < 0.6);
+    if (tick % 11 === 0) follow();
+    if (!live && tick % 5 === 0) playMatch();
+  }, 1500);
+}
+
+// Mit Server: neue Werte regelmäßig holen
+if (live) {
+  setInterval(async () => {
+    try {
+      const data = await load('live.json');
+      state = data.state;
+      draw();
+    } catch {}
+  }, 30000);
+}
 </script>
 </body>
 </html>
