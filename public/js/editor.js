@@ -67,14 +67,20 @@ function setupDragging() {
   preview.addEventListener('pointermove', (e) => {
     if (!drag) return;
     const { style } = overlay;
-    drag.widget.x = Math.round(Math.max(0, Math.min(style.width - 4, drag.x + (e.clientX - drag.startX) / scale)));
-    drag.widget.y = Math.round(Math.max(0, Math.min(style.height - 4, drag.y + (e.clientY - drag.startY) / scale)));
+    const x = drag.x + (e.clientX - drag.startX) / scale;
+    const y = drag.y + (e.clientY - drag.startY) / scale;
+    // Alt gedrückt halten = frei verschieben ohne Einrasten
+    const snapped = e.altKey ? { x, y, guides: [] } : snap(drag.widget, x, y);
+    drag.widget.x = Math.round(Math.max(0, Math.min(style.width - 4, snapped.x)));
+    drag.widget.y = Math.round(Math.max(0, Math.min(style.height - 4, snapped.y)));
     drawPreview();
+    drawGuides(snapped.guides);
   });
 
   const end = () => {
     if (!drag) return;
     drag = null;
+    drawPreview();
     renderWidgetList();
     scheduleSave();
   };
@@ -94,6 +100,61 @@ function setupDragging() {
     renderWidgetList();
     changed();
   });
+}
+
+// ---------- Einrasten ----------
+
+const SNAP_DISTANCE = 6; // Bildschirm-Pixel
+
+/** Linien, an denen ein Widget einrasten kann: Kanten und Mitten der anderen Widgets und des Overlays. */
+function snapLines(exceptId) {
+  const { width, height } = overlay.style;
+  const xs = [0, width / 2, width];
+  const ys = [0, height / 2, height];
+  for (const node of $('preview').querySelectorAll('[data-widget-id]')) {
+    if (node.dataset.widgetId === exceptId) continue;
+    const w = overlay.widgets.find((v) => v.id === node.dataset.widgetId);
+    xs.push(w.x, w.x + node.offsetWidth / 2, w.x + node.offsetWidth);
+    ys.push(w.y, w.y + node.offsetHeight / 2, w.y + node.offsetHeight);
+  }
+  return { xs, ys };
+}
+
+/** Rastet Oberkante, Mitte oder Unterkante (bzw. links, Mitte, rechts) an der nächsten Linie ein. */
+function snap(widget, x, y) {
+  const node = $('preview').querySelector(`[data-widget-id="${widget.id}"]`);
+  if (!node) return { x, y, guides: [] };
+  const { xs, ys } = snapLines(widget.id);
+  const limit = SNAP_DISTANCE / scale;
+  const nearest = (pos, size, lines) => {
+    let best = null;
+    for (const offset of [0, size / 2, size]) {
+      for (const line of lines) {
+        const d = line - (pos + offset);
+        if (Math.abs(d) <= limit && (!best || Math.abs(d) < Math.abs(best.d))) best = { d, line };
+      }
+    }
+    return best;
+  };
+  const bx = nearest(x, node.offsetWidth, xs);
+  const by = nearest(y, node.offsetHeight, ys);
+  const guides = [];
+  if (bx) guides.push({ axis: 'x', at: bx.line });
+  if (by) guides.push({ axis: 'y', at: by.line });
+  return { x: bx ? x + bx.d : x, y: by ? y + by.d : y, guides };
+}
+
+function drawGuides(guides) {
+  const root = $('preview').firstElementChild;
+  if (!root) return;
+  for (const g of guides) {
+    const line = document.createElement('div');
+    line.className = 'snap-guide';
+    Object.assign(line.style, g.axis === 'x'
+      ? { left: `${g.at}px`, top: 0, bottom: 0, width: `${1 / scale}px` }
+      : { top: `${g.at}px`, left: 0, right: 0, height: `${1 / scale}px` });
+    root.appendChild(line);
+  }
 }
 
 // Ein frisch eingeblendetes Widget, das über einem anderen liegt, bekommt einen freien Platz.

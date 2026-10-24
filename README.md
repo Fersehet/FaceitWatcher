@@ -7,7 +7,7 @@
 
 Lokales Tool, mit dem du eigene Faceit-Overlays (Elo, Level, Session-Stats, K/D, …) für OBS baust und deine Faceit-Statistiken automatisch speicherst.
 
-- **Editor im Browser**: jede Stat einzeln an/aus, per Drag & Drop verschieben, Farben, Schrift, Größe, Hintergrund, Rahmen. Mehrere Overlays möglich.
+- **Editor im Browser**: jede Stat einzeln an/aus, per Drag & Drop verschieben (mit Einrasten an anderen Elementen), Farben, Schrift, Größe, Hintergrund, Rahmen. Mehrere Overlays möglich.
 - **OBS-Browserquelle**: transparentes Overlay, aktualisiert sich live, auch während du im Editor etwas änderst.
 - **Statistik-Speicher**: jeder neue Elo-Stand landet in einer lokalen SQLite-Datenbank (`data/`), daraus entsteht dein Elo-Verlauf.
 - **Session-Stats**: Elo-Änderung und Siege/Niederlagen seit Streambeginn. Neue Session per Knopf oder automatisch nach 12 Stunden.
