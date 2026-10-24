@@ -107,12 +107,12 @@ export class Tracker extends EventEmitter {
   }
 
   /** Der Rahmen ändert sich selten, daher höchstens stündlich bei Faceit nachsehen. */
-  private frame = { nickname: '', url: '', checkedAt: 0 };
+  private frame = { playerId: '', url: '', checkedAt: 0 };
 
-  private async avatarFrame(nickname: string): Promise<string> {
+  private async avatarFrame(playerId: string): Promise<string> {
     if (this.state.avatarFrameOverride) return this.state.avatarFrameOverride;
-    if (this.frame.nickname !== nickname || Date.now() - this.frame.checkedAt > 60 * 60 * 1000) {
-      this.frame = { nickname, url: await this.source.fetchAvatarFrame(nickname), checkedAt: Date.now() };
+    if (this.frame.playerId !== playerId || Date.now() - this.frame.checkedAt > 60 * 60 * 1000) {
+      this.frame = { playerId, url: await this.source.fetchAvatarFrame(playerId), checkedAt: Date.now() };
     }
     return this.frame.url;
   }
@@ -133,7 +133,7 @@ export class Tracker extends EventEmitter {
     }
     try {
       const player = await this.source.fetchPlayer(this.state.nickname);
-      player.avatarFrame = await this.avatarFrame(player.nickname);
+      player.avatarFrame = await this.avatarFrame(player.playerId);
       const previous = this.storage.latestSnapshot(player.playerId);
       this.storage.saveSnapshot(player);
       await this.recordNewMatches(previous, player);

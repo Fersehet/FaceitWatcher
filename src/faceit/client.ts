@@ -123,32 +123,44 @@ export class FaceitClient implements StatsSource {
   }
 
   /**
-   * Die offizielle Data API liefert keine Kosmetik. Die Faceit-Webseite lädt Profile über eine
-   * interne Schnittstelle, in deren Antwort wir nach einem Bild suchen, dessen Schlüssel "frame" enthält.
+   * Die offizielle Data API liefert keine Kosmetik. Die Faceit-Webseite lädt den ausgerüsteten
+   * Avatar-Rahmen über die interne Schnittstelle /api/user-summary/v2/list (POST {"ids": [...]}).
    * Ändert Faceit diese Schnittstelle, gibt es einfach keinen Rahmen.
    */
-  async fetchAvatarFrame(nickname: string): Promise<string> {
+  async fetchAvatarFrame(playerId: string): Promise<string> {
     try {
-      const res = await fetch(`https://www.faceit.com/api/users/v1/nicknames/${encodeURIComponent(nickname)}`, {
-        headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0 FaceitWatcher' },
+      const res = await fetch('https://www.faceit.com/api/user-summary/v2/list', {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 FaceitWatcher' },
+        body: JSON.stringify({ ids: [playerId] }),
       });
       if (!res.ok) return '';
-      return findFrameUrl(await res.json()) ?? '';
+      return pickFrameUrl(await res.json());
     } catch {
       return '';
     }
   }
 }
 
-function findFrameUrl(value: unknown, insideFrame = false, depth = 0): string | null {
-  if (depth > 8 || value === null || typeof value !== 'object') return null;
-  for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
-    const frameKey = insideFrame || /frame/i.test(key);
-    if (frameKey && typeof v === 'string' && /^https:\/\/.+\.(png|webp|gif|svg|apng)(\?.*)?$/i.test(v)) return v;
-    const nested = findFrameUrl(v, frameKey, depth + 1);
-    if (nested) return nested;
-  }
-  return null;
+/**
+ * Sucht alle Bild-URLs unter Schlüsseln mit "frame" (z. B. non_animated_frame_large_url, animated_frame_large_url)
+ * und nimmt die große Variante, bevorzugt die nicht animierte, die Faceit auch im Profil zeigt.
+ */
+export function pickFrameUrl(value: unknown): string {
+  const found: { key: string; url: string }[] = [];
+  const walk = (v: unknown, key: string, depth: number) => {
+    if (depth > 10 || v === null) return;
+    if (typeof v === 'string') {
+      if (/frame/i.test(key) && /^https:\/\/\S+\.(png|webp|gif|svg|apng)(\?\S*)?$/i.test(v)) found.push({ key: key.toLowerCase(), url: v });
+      return;
+    }
+    if (typeof v !== 'object') return;
+    for (const [k, child] of Object.entries(v as Record<string, unknown>)) walk(child, Array.isArray(v) ? key : k, depth + 1);
+  };
+  walk(value, '', 0);
+  const score = ({ key }: { key: string }) =>
+    (key.includes('large') ? 2 : 0) + (!key.includes('animated') || /non_?animated|static/.test(key) ? 1 : 0);
+  return found.sort((a, b) => score(b) - score(a))[0]?.url ?? '';
 }
 
 /** Faceit liefert den Endstand als "Team 1 / Team 2". Wir zeigen ihn aus Sicht des Spielers: eigene Runden zuerst. */
