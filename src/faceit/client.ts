@@ -144,7 +144,7 @@ export class FaceitClient implements StatsSource {
 
   /**
    * Die Data API liefert keine Elo pro Match. Die Faceit-Webseite zeigt sie im Elo-Verlauf über die interne
-   * Schnittstelle /api/stats/v1/stats/time/users/{id}/games/cs2 (Feld "elo" = Stand nach dem Match).
+   * Schnittstelle /api/stats/v1/stats/time/users/{id}/games/cs2 ("elo" = Stand nach dem Match, "elo_delta" = Änderung).
    * Ändert Faceit diese Schnittstelle, bleibt die Elo-Änderung älterer Matches einfach unbekannt.
    */
   async fetchEloHistory(playerId: string, count: number): Promise<EloAfterMatch[]> {
@@ -156,10 +156,15 @@ export class FaceitClient implements StatsSource {
       const body = await res.json();
       const items: any[] = Array.isArray(body) ? body : (body?.items ?? body?.payload ?? []);
       return items
-        .map((m) => ({ matchId: String(m.matchId ?? m.match_id ?? ''), elo: num(m.elo) ?? NaN, at: num(m.date, m.created_at) ?? 0 }))
+        .map((m) => ({
+          matchId: String(m.matchId ?? m._id?.matchId ?? m.match_id ?? ''),
+          elo: num(m.elo) ?? NaN,
+          delta: num(m.elo_delta),
+          at: num(m.date, m.created_at) ?? 0,
+        }))
         .filter((m) => m.matchId && Number.isFinite(m.elo))
         .sort((a, b) => b.at - a.at)
-        .map(({ matchId, elo }) => ({ matchId, elo }));
+        .map(({ matchId, elo, delta }) => ({ matchId, elo, delta }));
     } catch {
       return [];
     }

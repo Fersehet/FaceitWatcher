@@ -62,6 +62,8 @@ export interface RecentMatch {
 export interface EloAfterMatch {
   matchId: string;
   elo: number;
+  /** Elo-Änderung durch das Match, falls Faceit sie direkt mitliefert */
+  delta: number | null;
 }
 
 export type MatchDetails = Omit<MatchResult, 'avatar' | 'avatarFrame' | 'eloBefore' | 'eloAfter' | 'eloChange' | 'level'>;
