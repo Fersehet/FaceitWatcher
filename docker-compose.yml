@@ -20,6 +20,7 @@ services:
       - "3000:3000"   # Editor + OBS-Overlay unter http://<IP-des-Servers>:3000, Landingpage unter /site/
     volumes:
       - ./data:/app/data
+      - ./website:/app/website:ro   # optional: Landingpage aus dem privaten Website-Repo
 
   discord-bot:
     image: faceitwatcher
