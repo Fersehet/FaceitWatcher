@@ -87,9 +87,9 @@ function widgetContent(widget, style, state) {
   switch (widget.type) {
     case 'avatar': {
       const frame = style.showAvatarFrame && p?.avatarFrame ? p.avatarFrame : '';
-      // Das Bild ist immer gleich groß. Mit Faceit-Rahmen übernimmt der Rahmen die Umrandung und liegt
-      // außen herum (136 % wie bei Faceit), ohne Platz im Layout zu belegen.
-      const box = { width: `${size}px`, height: `${size}px`, borderRadius: '50%', border: frame ? 'none' : `2px solid ${style.accentColor}`, boxSizing: 'border-box' };
+      // Das Bild ist immer gleich groß. Der Ring (ohne Rahmen) bzw. der Faceit-Rahmen (136 % wie bei Faceit)
+      // liegt außen herum, ohne Platz im Layout zu belegen oder das Bild zu verkleinern.
+      const box = { width: `${size}px`, height: `${size}px`, borderRadius: '50%', boxShadow: frame ? 'none' : `0 0 0 2px ${style.accentColor}` };
       let avatar;
       if (p?.avatar) {
         avatar = el('img', { ...box, objectFit: 'cover', display: 'block' });
