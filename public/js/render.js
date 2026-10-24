@@ -35,6 +35,42 @@ function el(tag, styles = {}, text) {
   return node;
 }
 
+/** Faceit-Bilder laufen über den lokalen Cache des Servers. */
+export function assetUrl(remote) {
+  return `/assets/remote?url=${encodeURIComponent(remote)}`;
+}
+
+// Level-Symbole, die nicht geladen werden konnten: dann den gezeichneten Kreis verwenden
+const missingLevelIcons = new Set();
+
+// Nachbau der Faceit-Level-Symbole: dunkle Scheibe, Bogen über 270° (Lücke unten), Füllung = Level / 10
+function arcPath(r, fromDeg, sweepDeg) {
+  const point = (deg) => {
+    const rad = (deg * Math.PI) / 180;
+    return `${(50 + r * Math.sin(rad)).toFixed(2)} ${(50 - r * Math.cos(rad)).toFixed(2)}`;
+  };
+  return `M ${point(fromDeg)} A ${r} ${r} 0 ${sweepDeg > 180 ? 1 : 0} 1 ${point(fromDeg + sweepDeg)}`;
+}
+
+export function levelBadgeSvg(level) {
+  const n = Math.min(10, Math.max(1, Math.round(level)));
+  const color = levelColor(n);
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="48" fill="#1f2125" stroke="#2c2f34" stroke-width="2"/>
+    <path d="${arcPath(36, 225, 270)}" fill="none" stroke="#3a3d42" stroke-width="9"/>
+    <path d="${arcPath(36, 225, 27 * n)}" fill="none" stroke="${color}" stroke-width="9"/>
+    <text x="50" y="51" text-anchor="middle" dominant-baseline="central" font-family="Arial, Helvetica, sans-serif"
+      font-weight="700" font-size="${n === 10 ? 32 : 38}" fill="${color}">${n}</text>
+  </svg>`;
+}
+
+function levelBadge(level, size) {
+  const wrap = el('div', { width: `${size * 1.6}px`, height: `${size * 1.6}px` });
+  wrap.innerHTML = levelBadgeSvg(level);
+  wrap.firstElementChild.style.display = 'block';
+  return wrap;
+}
+
 function signed(n) {
   return n > 0 ? `+${n}` : String(n);
 }
@@ -48,30 +84,41 @@ function widgetContent(widget, style, state) {
 
   switch (widget.type) {
     case 'avatar': {
-      const box = { width: `${size}px`, height: `${size}px`, borderRadius: '50%', border: `2px solid ${style.accentColor}` };
+      const frame = style.showAvatarFrame && p?.avatarFrame ? p.avatarFrame : '';
+      // Mit Faceit-Rahmen übernimmt der Rahmen die Umrandung
+      const box = { width: `${size}px`, height: `${size}px`, borderRadius: '50%', border: frame ? 'none' : `2px solid ${style.accentColor}`, boxSizing: 'border-box' };
+      let avatar;
       if (p?.avatar) {
-        const img = el('img', { ...box, objectFit: 'cover', display: 'block' });
-        img.src = p.avatar;
-        return img;
+        avatar = el('img', { ...box, objectFit: 'cover', display: 'block' });
+        avatar.src = assetUrl(p.avatar);
+      } else {
+        avatar = el(
+          'div',
+          { ...box, background: style.accentColor, display: 'grid', placeItems: 'center', fontSize: `${size * 0.45}px`, fontWeight: 700, color: '#fff' },
+          (p?.nickname ?? '?').charAt(0).toUpperCase(),
+        );
       }
-      return el(
-        'div',
-        { ...box, background: style.accentColor, display: 'grid', placeItems: 'center', fontSize: `${size * 0.45}px`, fontWeight: 700, color: '#fff' },
-        (p?.nickname ?? '?').charAt(0).toUpperCase(),
-      );
+      if (!frame) return avatar;
+      const wrap = el('div', { position: 'relative', width: `${size}px`, height: `${size}px` });
+      const frameImg = el('img', { position: 'absolute', left: '-18%', top: '-18%', width: '136%', height: '136%', pointerEvents: 'none' });
+      frameImg.src = assetUrl(frame);
+      frameImg.onerror = () => frameImg.remove();
+      wrap.append(avatar, frameImg);
+      return wrap;
     }
     case 'nickname':
       return p ? el('div', { fontWeight: 700 }, p.nickname) : null;
     case 'level': {
       if (!p) return null;
-      return el(
-        'div',
-        {
-          width: `${size * 1.4}px`, height: `${size * 1.4}px`, borderRadius: '50%', display: 'grid', placeItems: 'center',
-          border: `${Math.max(2, size / 8)}px solid ${levelColor(p.level)}`, color: levelColor(p.level), fontWeight: 700, background: 'rgba(0,0,0,0.35)',
-        },
-        String(p.level),
-      );
+      if (style.levelIcon === 'badge' || missingLevelIcons.has(p.level)) return levelBadge(p.level, size);
+      const icon = el('img', { width: `${size * 1.6}px`, height: `${size * 1.6}px`, display: 'block' });
+      icon.src = `/assets/level/${p.level}`;
+      icon.alt = `Level ${p.level}`;
+      icon.onerror = () => {
+        missingLevelIcons.add(p.level);
+        icon.replaceWith(levelBadge(p.level, size));
+      };
+      return icon;
     }
     case 'elo':
       return p ? el('div', { fontWeight: 700 }, `${p.elo} ELO`) : null;

@@ -253,6 +253,8 @@ const STYLE_FIELDS = [
   ['accentColor', 'Akzentfarbe', 'color'],
   ['positiveColor', 'Farbe Sieg / Plus', 'color'],
   ['negativeColor', 'Farbe Niederlage / Minus', 'color'],
+  ['levelIcon', 'Level-Symbol', 'select', { options: [['badge', 'Faceit-Stil (eingebaut)'], ['official', 'Original-Datei von Faceit laden']] }],
+  ['showAvatarFrame', 'Faceit-Avatar-Rahmen', 'checkbox'],
 ];
 
 function renderStyleForm() {
@@ -263,11 +265,14 @@ function renderStyleForm() {
       overlay.style[key] = v;
       changed();
     };
-    if (type === 'font') {
+    if (type === 'font' || type === 'select') {
+      const options = type === 'font' ? FONTS.map((f) => [f, f]) : attrs.options;
       const select = document.createElement('select');
-      for (const f of FONTS) select.add(new Option(f, f, false, f === overlay.style.fontFamily));
+      for (const [value, text] of options) select.add(new Option(text, value, false, value === overlay.style[key]));
       select.addEventListener('change', () => set(select.value));
       form.appendChild(field(label, select));
+    } else if (type === 'checkbox') {
+      form.appendChild(field(label, input('checkbox', !!overlay.style[key], set)));
     } else {
       form.appendChild(field(label, input(type, overlay.style[key], set, attrs)));
     }
@@ -315,6 +320,12 @@ function renderStatus() {
     status.textContent = state?.player ? `Live: ${state.player.nickname}` : 'Verbinde…';
   }
   if (document.activeElement !== $('nickname')) $('nickname').value = state?.nickname ?? '';
+  if (document.activeElement !== $('frameUrl')) $('frameUrl').value = state?.avatarFrameOverride ?? '';
+  $('frameInfo').textContent = state?.avatarFrameOverride
+    ? 'Eigener Rahmen aktiv.'
+    : state?.player?.avatarFrame
+      ? 'Rahmen von Faceit gefunden.'
+      : 'Kein Rahmen von Faceit gefunden. Du kannst hier die Bild-Adresse eines Rahmens eintragen.';
   if (document.activeElement !== $('seasonStart')) $('seasonStart').value = state?.seasonStart ?? '';
   const season = state?.season;
   $('seasonInfo').textContent = season
@@ -368,6 +379,16 @@ async function init() {
     state = await api('PUT', '/api/nickname', { nickname: $('nickname').value });
     renderStatus();
     drawPreview();
+  });
+  $('frameForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      state = await api('PUT', '/api/avatar-frame', { url: $('frameUrl').value });
+      renderStatus();
+      drawPreview();
+    } catch (err) {
+      alert(err.message);
+    }
   });
   $('seasonStart').addEventListener('change', async (e) => {
     state = await api('PUT', '/api/season', { start: e.target.value });
