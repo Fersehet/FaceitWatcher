@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import type { MatchResult, PlayerSnapshot, StatsSource } from './faceit/types.ts';
+import type { MatchResult, PlayerSnapshot, RecentMatch, StatsSource } from './faceit/types.ts';
 import type { Storage } from './storage/storage.ts';
 
 /** Beginn der aktuellen FACEIT-Season (Season 9), solange im Editor kein eigenes Datum gesetzt ist. */
@@ -40,6 +40,8 @@ export interface LiveState {
   player: PlayerSnapshot | null;
   session: SessionStats | null;
   season: SeasonStats | null;
+  /** Die letzten Matches mit Elo-Änderung, in derselben Reihenfolge wie player.recentResults */
+  recentMatches: RecentMatch[];
   error: string | null;
   updatedAt: string | null;
 }
@@ -49,6 +51,9 @@ const SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 
 /** So viele Abrufe wird auf die Elo-Änderung eines neuen Matches gewartet. */
 const ELO_WAIT_POLLS = 3;
+
+/** Schlägt das Nachschlagen der Elo bei Faceit fehl, wird es frühestens nach 5 Minuten wiederholt. */
+const ELO_RETRY_MS = 5 * 60 * 1000;
 
 /** Fragt Faceit regelmäßig ab, speichert neue Stände und verteilt den Live-Zustand an alle Overlays. */
 export class Tracker extends EventEmitter {
@@ -72,6 +77,7 @@ export class Tracker extends EventEmitter {
       player: null,
       session: null,
       season: null,
+      recentMatches: [],
       error: null,
       updatedAt: null,
     };
@@ -93,6 +99,7 @@ export class Tracker extends EventEmitter {
     this.state.player = null;
     this.state.session = null;
     this.state.season = null;
+    this.state.recentMatches = [];
     await this.poll();
   }
 
@@ -140,6 +147,7 @@ export class Tracker extends EventEmitter {
       const previous = this.storage.latestSnapshot(player.playerId);
       this.storage.saveSnapshot(player);
       await this.recordNewMatches(previous, player);
+      this.state.recentMatches = await this.recentMatches(player);
       this.state.player = player;
       this.state.session = this.sessionStats(player);
       await this.updateSeason(player);
@@ -159,9 +167,11 @@ export class Tracker extends EventEmitter {
       session = this.newSession(player);
       this.saveSession(session);
     }
-    const matches = Math.max(0, player.matches - session.startMatches);
-    // Faceit zählt "Wins" manchmal etwas später hoch als "Matches", daher begrenzen
-    const wins = Math.min(matches, Math.max(0, player.wins - session.startWins));
+    // Nur Matchmaking zählt: aus den gespeicherten (bereits gefilterten) Matches seit Session-Start
+    const since = session.startedAt;
+    const played = [...this.storage.listMatches(player.playerId, 200), ...this.pending.map((p) => p.match)].filter((m) => m.finishedAt >= since);
+    const matches = played.length;
+    const wins = played.filter((m) => m.result === 'W').length;
     return {
       startedAt: session.startedAt,
       eloChange: player.elo - session.startElo,
@@ -219,6 +229,50 @@ export class Tracker extends EventEmitter {
   private eloBefore(playerId: string, finishedAt: string): number | null {
     const before = this.storage.eloHistory(playerId).filter((h) => h.takenAt < finishedAt);
     return before.length ? before[before.length - 1].elo : null;
+  }
+
+  /** Für diese Matches wurde die Elo zuletzt bei Faceit nachgeschlagen; ohne Erfolg erst nach ELO_RETRY_MS erneut. */
+  private eloLookup = { key: '', at: 0 };
+  /** Ob Faceits "Recent Results" mit dem neuesten Match beginnen; wird aus den gespeicherten Matches erkannt. */
+  private newestFirst = true;
+
+  /**
+   * Die letzten fünf gespeicherten Matches mit Elo-Änderung. Fehlt sie (z. B. Matches vom ersten Start),
+   * wird sie einmalig aus Faceits Elo-Verlauf berechnet und gespeichert.
+   */
+  private async recentMatches(player: PlayerSnapshot): Promise<RecentMatch[]> {
+    const count = Math.max(player.recentResults.length, 5);
+    const stored = this.storage.listMatches(player.playerId, count);
+    const missing = stored.filter((m) => m.eloChange === null);
+    const key = missing.map((m) => m.matchId).join();
+    const due = key !== this.eloLookup.key || Date.now() - this.eloLookup.at > ELO_RETRY_MS;
+    if (missing.length && this.source.fetchEloHistory && due) {
+      this.eloLookup = { key, at: Date.now() };
+      const history = await this.source.fetchEloHistory(player.playerId, count + 1);
+      for (const m of missing) {
+        const i = history.findIndex((h) => h.matchId === m.matchId);
+        if (i < 0) continue;
+        const delta = history[i].delta ?? (i + 1 < history.length ? history[i].elo - history[i + 1].elo : null);
+        if (delta === null) continue;
+        m.eloAfter = history[i].elo;
+        m.eloBefore = history[i].elo - delta;
+        m.eloChange = delta;
+        this.storage.saveMatch(m);
+      }
+    }
+
+    const results = stored.map((m) => m.result).join('');
+    const faceit = player.recentResults.join('');
+    const reversed = [...player.recentResults].reverse().join('');
+    if (results.length === faceit.length && faceit !== reversed) {
+      if (results === faceit) this.newestFirst = true;
+      else if (results === reversed) this.newestFirst = false;
+    }
+    const recent: RecentMatch[] = stored.map(({ matchId, result, eloChange }) => ({ matchId, result, eloChange }));
+    // Noch nicht genug gespeicherte Matches (z. B. Demo-Modus): Rest ohne Elo aus Faceits Ergebnissen auffüllen
+    const faceitNewestFirst = this.newestFirst ? player.recentResults : [...player.recentResults].reverse();
+    for (const result of faceitNewestFirst.slice(recent.length)) recent.push({ matchId: '', result, eloChange: null });
+    return this.newestFirst ? recent : recent.reverse();
   }
 
   private publish(match: MatchResult, announce: boolean) {
