@@ -61,7 +61,12 @@ Update: `git pull` und danach `docker compose up -d --build`.
 
 Der Server kann zusätzlich eine statische Website unter `/site/` ausliefern. Sie gehört nicht zu diesem Repo: Lege die Dateien in den Ordner `website/` neben dieser README (wird von Git ignoriert und in Docker eingebunden) oder gib mit `SITE_DIR` einen anderen Ordner an.
 
-Mit `SITE_HOST=deine-domain.de` in `.env` beantwortet der Server unter dieser Domain nur Anfragen für die Website (z. B. hinter Nginx Proxy Manager). Editor, Overlays und API sind darüber nicht erreichbar und bleiben im Heimnetz.
+Mit `SITE_HOST=deine-domain.de` in `.env` zeigt der Server unter dieser Domain die Website (z. B. hinter Nginx Proxy Manager). Der Editor ist dort nur nach Login erreichbar:
+
+1. In `.env` `ADMIN_USER` (Standard `admin`) und ein langes `ADMIN_PASSWORD` eintragen, Server neu starten.
+2. Auf der Website oben auf **Login** klicken (Seite `login.html` aus dem Website-Repo), danach geht es direkt in den Editor (`/editor.html`).
+
+Ohne Login sind über die Domain nur die Website, die Bilder und die Overlays lesend erreichbar (`/overlay/<id>`, damit OBS auch von außen funktioniert). Alles andere (Editor, Änderungen über die API) braucht die Anmeldung. Nach 10 falschen Versuchen sperrt der Server die IP für 15 Minuten. Ein neues Passwort meldet alle Sitzungen ab. Ohne `ADMIN_PASSWORD` bleibt der Editor über die Domain gesperrt. Im Heimnetz (localhost oder LAN-IP) braucht der Editor weiterhin keinen Login.
 
 ## Schnittstelle für andere Clients
 
@@ -73,6 +78,8 @@ Die Faceit-API wird **nur vom Server** abgefragt. Overlay und Editor lesen diese
 | `GET /api/matches?limit=20` | gespeicherte Matches, neueste zuerst (`MatchResult`, siehe `src/faceit/types.ts`) |
 | `GET /api/history?since=ISO` | Elo-Verlauf |
 | `GET /api/events` | Server-Sent Events: `state`, `overlay`, `match` |
+| `GET /api/me` | Login-Status (`user`, `loginEnabled`, `site`) |
+| `POST /api/login` / `POST /api/logout` | An- und Abmelden für den Editor über die Website (`{ "user", "password" }`) |
 | `GET /assets/level/1` … `/10` | offizielles Faceit-Level-Symbol (lokal zwischengespeichert) |
 | `GET /assets/remote?url=…` | Faceit-Bild (Avatar, Avatar-Rahmen) aus dem lokalen Cache |
 
