@@ -12,65 +12,66 @@
       <div class="brand"><img src="/logo.svg" alt="" width="28" height="28" /><b>Faceit<span>Watcher</span></b></div>
       <div id="status" class="status"></div>
       <div class="overlay-picker">
-        <select id="overlaySelect" aria-label="Overlay auswählen"></select>
-        <input id="overlayName" aria-label="Name des Overlays" />
-        <button id="newOverlay">Neu</button>
-        <button id="copyOverlay">Duplizieren</button>
-        <button id="resetOverlay" title="Positionen, Stats und Design auf den Standard zurücksetzen">Zurücksetzen</button>
-        <button id="deleteOverlay" class="danger">Löschen</button>
+        <select id="overlaySelect" aria-label="Overlay auswählen" data-i18n-aria-label="selectOverlay"></select>
+        <input id="overlayName" aria-label="Name des Overlays" data-i18n-aria-label="overlayName" />
+        <button id="newOverlay" data-i18n="new">Neu</button>
+        <button id="copyOverlay" data-i18n="duplicate">Duplizieren</button>
+        <button id="resetOverlay" title="Positionen, Stats und Design auf den Standard zurücksetzen" data-i18n-title="resetTitle" data-i18n="reset">Zurücksetzen</button>
+        <button id="deleteOverlay" class="danger" data-i18n="delete">Löschen</button>
       </div>
-      <div id="account" class="account" hidden>
+      <div class="account">
+        <select id="langSel" class="lang" aria-label="Sprache" data-i18n-aria-label="langLabel"></select>
         <span id="accountName"></span>
-        <a href="/">Website</a>
-        <button id="logout">Abmelden</button>
+        <a href="/" data-i18n="website">Website</a>
+        <button id="logout" data-i18n="logout">Abmelden</button>
       </div>
     </header>
 
     <main>
       <aside>
         <section>
-          <h2>Spieler</h2>
+          <h2 data-i18n="player">Spieler</h2>
           <form id="nicknameForm" class="row">
-            <input id="nickname" placeholder="Faceit-Nickname" />
-            <button type="submit">Speichern</button>
+            <input id="nickname" placeholder="Faceit-Nickname" data-i18n-placeholder="nicknamePh" />
+            <button type="submit" data-i18n="save">Speichern</button>
           </form>
           <div class="row">
-            <button id="refresh">Jetzt aktualisieren</button>
-            <button id="resetSession">Session neu starten</button>
+            <button id="refresh" data-i18n="refresh">Jetzt aktualisieren</button>
+            <button id="resetSession" data-i18n="resetSession">Session neu starten</button>
           </div>
           <p class="hint" id="sessionInfo"></p>
           <label class="season">
-            Season-Start (für Season WR)
+            <span data-i18n="seasonStart">Season-Start (für Season WR)</span>
             <input id="seasonStart" type="date" />
           </label>
           <p class="hint" id="seasonInfo"></p>
           <form id="frameForm" class="season">
-            Avatar-Rahmen (leer = automatisch von Faceit)
+            <span data-i18n="avatarFrame">Avatar-Rahmen (leer = automatisch von Faceit)</span>
             <div class="row">
               <input id="frameUrl" placeholder="https://…" />
-              <button type="submit">Speichern</button>
+              <button type="submit" data-i18n="save">Speichern</button>
             </div>
           </form>
           <p class="hint" id="frameInfo"></p>
         </section>
 
         <section>
-          <h2>In OBS einbinden</h2>
+          <h2 data-i18n="obsTitle">In OBS einbinden</h2>
           <div class="row">
             <input id="obsUrl" readonly />
-            <button id="copyUrl">Kopieren</button>
+            <button id="copyUrl" data-i18n="copy">Kopieren</button>
           </div>
-          <p class="hint">OBS: Quelle hinzufügen → Browser → URL einfügen. Breite und Höhe wie unten unter Design eintragen.</p>
+          <p class="hint" data-i18n="obsHint">OBS: Quelle hinzufügen → Browser → URL einfügen. Breite und Höhe wie unten unter Design eintragen.</p>
         </section>
 
         <section>
-          <h2>Stats</h2>
-          <p class="hint">Haken setzen zum Einblenden. In der Vorschau ziehen zum Verschieben, Elemente rasten an Kanten und Mitten anderer Elemente ein (Alt halten für frei).</p>
+          <h2 data-i18n="stats">Stats</h2>
+          <p class="hint" data-i18n="statsHint">Haken setzen zum Einblenden. In der Vorschau ziehen zum Verschieben, Elemente rasten an Kanten und Mitten anderer Elemente ein (Alt halten für frei).</p>
           <ul id="widgetList" class="widgets"></ul>
         </section>
 
         <section>
-          <h2>Design</h2>
+          <h2 data-i18n="design">Design</h2>
           <div id="styleForm" class="grid"></div>
         </section>
       </aside>
@@ -79,7 +80,7 @@
         <div id="previewWrap" class="checker">
           <div id="preview"></div>
         </div>
-        <p class="hint">Karomuster = transparent in OBS</p>
+        <p class="hint" data-i18n="checker">Karomuster = transparent in OBS</p>
       </div>
     </main>
 
