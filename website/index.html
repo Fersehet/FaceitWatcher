@@ -845,7 +845,9 @@ const source = document.getElementById('dataSource');
 if (live) {
   source.textContent = state.demo ? 'Server · Demo-Modus' : 'Live-Daten';
   source.classList.toggle('live', !state.demo);
-  document.getElementById('demoNote').textContent = 'Das ist das echte Overlay vom FaceitWatcher-Server mit den aktuellen Werten. Deine Änderungen hier bleiben nur in dieser Vorschau.';
+  document.getElementById('demoNote').textContent = 'Das ist das echte Overlay vom FaceitWatcher-Server mit den aktuellen Werten. Deine Änderungen hier bleiben nur in dieser Vorschau.';} else if (state.player) {
+  source.textContent = `${state.player.nickname} · Stand 24.10.`;
+  document.getElementById('demoNote').textContent = `Echtes Overlay mit dem Faceit-Account ${state.player.nickname} (Stand 24.10.2026). Die Matches, die hier durchlaufen, sind simuliert. Probier die Schalter aus.`;
 }
 
 // Kurzer Ladebildschirm in der Vorschau, wenn sich etwas ändert
@@ -862,6 +864,15 @@ const pulse = () => {
 
 function draw() {
   renderOverlay(container, overlay, state);
+  // Ohne Server gibt es keinen Bild-Cache: Faceit-Bilder direkt laden, sonst Anfangsbuchstabe
+  if (!live) {
+    container.querySelectorAll('img[src*="/assets/remote?url="]').forEach((img) => {
+      img.src = new URL(img.src).searchParams.get('url');
+      img.onerror = () => {
+        if (state.player && img.src === state.player.avatar) { state.player.avatar = ''; draw(); } else img.remove();
+      };
+    });
+  }
   fit();
 }
 
@@ -941,7 +952,7 @@ draw();
 // Chat, Killfeed und Follower-Alarm halten die Szene lebendig
 const chat = document.getElementById('chat');
 const NAMES = [['ancientEnjoyer', '#7dd3fc'], ['xX_awp_Xx', '#f472b6'], ['mirage_mama', '#a3e635'], ['brotkasten', '#fbbf24'], ['eco_round', '#c4b5fd'], ['nadeking', '#5eead4'], ['flick_ingo', '#fca5a5']];
-const LINES = ['wie viel elo noch bis lvl 10?', 'das overlay ist clean', 'ONE TAP 😳', 'eco runde?', 'ggwp', 'welche sens spielst du', 'smoke mid bitte', 'lets gooo', 'der crosshair 🔥', '!elo', 'clutch incoming', 'HS-Quote ist crazy'];
+const LINES = ['wie viel elo noch bis lvl 8?', 'das overlay ist clean', 'ONE TAP 😳', 'eco runde?', 'ggwp', 'welche sens spielst du', 'smoke mid bitte', 'lets gooo', 'der crosshair 🔥', '!elo', 'clutch incoming', 'HS-Quote ist crazy'];
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 function say(text, highlight = false, who = pick(NAMES)) {
   const p = document.createElement('p');
@@ -982,14 +993,16 @@ function follow() {
   setTimeout(() => alertBox.classList.remove('on'), 2600);
 }
 
+const LEVELS = [0, 501, 751, 901, 1051, 1201, 1351, 1531, 1751, 2001];
+const startElo = state.player?.elo ?? 0;
 // Ohne Server: Matches durchspielen, damit sich das Overlay wie im Stream verändert
 function playMatch() {
   const p = state.player, s = state.session;
   if (!p || !s) return;
-  const win = p.elo > 1730 ? false : p.elo < 1560 ? true : Math.random() < 0.6;
+  const win = p.elo > startElo + 60 ? false : p.elo < startElo - 40 ? true : Math.random() < 0.6;
   const delta = (win ? 1 : -1) * (21 + Math.floor(Math.random() * 6));
   p.elo += delta;
-  p.level = p.elo >= 1751 ? 9 : p.elo >= 1531 ? 8 : 7;
+  p.level = LEVELS.filter((min) => p.elo >= min).length;
   p.matches += 1;
   p.recentResults = [win ? 'W' : 'L', ...p.recentResults].slice(0, 5);
   s.eloChange += delta;

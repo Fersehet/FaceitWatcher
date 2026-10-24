@@ -4,4 +4,4 @@ Statische Landingpage (Deutsch), die das FaceitWatcher OBS-Overlay bewirbt. Ohne
 
 Die Werte in der Overlay-Vorschau und im Elo-Diagramm sind Beispieldaten.
 
-Die Overlay-Vorschau in der Stream-Szene nutzt den echten Renderer des Tools (`public/js/render.js`, vom Server unter `js/render.js` ausgeliefert). Läuft die Seite über den FaceitWatcher-Server, zeigt sie das erste gespeicherte Overlay mit den aktuellen Werten (`live.json`). Sonst kommen Standard-Overlay und Beispielwerte aus `demo.json`.
+Die Overlay-Vorschau in der Stream-Szene nutzt den echten Renderer des Tools (`public/js/render.js`, vom Server unter `js/render.js` ausgeliefert). Läuft die Seite über den FaceitWatcher-Server, zeigt sie das erste gespeicherte Overlay mit den aktuellen Werten (`live.json`). Sonst kommen das Standard-Overlay und ein Stand von Jans Faceit-Account (Fersehet) aus `demo.json`. Die Matches dort sind simuliert.

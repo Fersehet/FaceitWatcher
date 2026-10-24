@@ -1,5 +1,5 @@
 {
-  "note": "Beispieldaten für die Landingpage, wenn sie ohne FaceitWatcher-Server läuft. Overlay = Standard aus src/overlays/defaults.ts",
+  "note": "Fallback für die Landingpage ohne FaceitWatcher-Server: Standard-Overlay aus src/overlays/defaults.ts mit Jans Faceit-Account (Fersehet), Stand 24.10.2026. Session-Werte entstehen in der Vorschau.",
   "overlay": {
     "id": "demo",
     "ownerId": "local",
@@ -202,37 +202,37 @@
     "updatedAt": "2026-10-24T14:30:50.267Z"
   },
   "state": {
-    "demo": true,
+    "demo": false,
     "player": {
-      "playerId": "demo",
-      "nickname": "s1mpleFan_92",
-      "avatar": "",
+      "playerId": "0de09226-6828-4e5f-9cc2-24658ecf06c2",
+      "nickname": "Fersehet",
+      "avatar": "https://distribution.faceit-cdn.net/images/27a956c0-cb6b-4168-bc9f-506e6d80071b.jpg",
       "avatarFrame": "",
-      "country": "de",
-      "elo": 1684,
-      "level": 8,
-      "matches": 812,
-      "wins": 441,
-      "winRate": 54,
-      "kd": 1.24,
-      "hsPercent": 48,
-      "adr": 84.2,
-      "currentStreak": 2,
+      "country": "sj",
+      "elo": 1408,
+      "level": 7,
+      "matches": 860,
+      "wins": 433,
+      "winRate": 50,
+      "kd": 1.07,
+      "hsPercent": 50,
+      "adr": null,
+      "currentStreak": 0,
       "longestStreak": 9,
       "recentResults": [
         "W",
-        "W",
         "L",
         "W",
+        "L",
         "L"
       ]
     },
     "session": {
       "startedAt": "",
-      "eloChange": 25,
-      "matches": 6,
-      "wins": 4,
-      "losses": 2
+      "eloChange": 0,
+      "matches": 0,
+      "wins": 0,
+      "losses": 0
     },
     "season": null,
     "error": null
