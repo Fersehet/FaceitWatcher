@@ -849,7 +849,7 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const scene = document.getElementById('scene');
 const slot = document.getElementById('slot');
 const container = document.getElementById('overlay');
-const TOGGLES = ['avatar', 'nickname', 'level', 'elo', 'eloProgress', 'eloToday', 'sessionRecord', 'kd', 'winRate', 'hsPercent', 'recentResults'];
+const TOGGLES = ['avatar', 'nickname', 'level', 'elo', 'eloProgress', 'eloToday', 'sessionRecord', 'kd', 'winRate', 'hsPercent', 'matches', 'recentResults'];
 
 let overlay, state, live = false;
 
@@ -907,7 +907,7 @@ function draw() {
 function fit() {
   const game = scene.querySelector('.game').clientWidth;
   // Auf dem Handy etwas größer, damit die Werte lesbar bleiben
-  const share = scene.clientWidth < 520 ? 0.64 : 0.44;
+  const share = scene.clientWidth < 520 ? 0.66 : 0.5;
   const scale = Math.min(1.2, (game * share) / overlay.style.width);
   container.style.transform = `scale(${scale})`;
   const w = overlay.style.width * scale, h = overlay.style.height * scale;
