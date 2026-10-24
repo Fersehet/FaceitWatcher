@@ -497,7 +497,7 @@ details[open] p { animation: rise .35s ease; }
           <span class="tag"><i></i>CAM</span>
         </div>
         <div class="chat" aria-hidden="true">
-          <div class="chat-head">STREAM-CHAT <b>● 1.204</b></div>
+          <div class="chat-head"><span>TWITCH · <span id="chatChannel">FERSEHET</span></span> <b>● 1.204</b></div>
           <div class="chat-list" id="chat"></div>
           <div class="chat-input">Nachricht senden…</div>
         </div>
@@ -959,7 +959,11 @@ draw();
 
 // Chat, Killfeed und Follower-Alarm halten die Szene lebendig
 const chat = document.getElementById('chat');
-const NAMES = [['ancientEnjoyer', '#7dd3fc'], ['xX_awp_Xx', '#f472b6'], ['mirage_mama', '#a3e635'], ['brotkasten', '#fbbf24'], ['eco_round', '#c4b5fd'], ['nadeking', '#5eead4'], ['flick_ingo', '#fca5a5']];
+// Namen im Chat: aus demo.json (chatNames), sonst erfundene. Echte Namen nur mit Einverständnis der Personen eintragen.
+const COLORS = ['#7dd3fc', '#f472b6', '#a3e635', '#fbbf24', '#c4b5fd', '#5eead4', '#fca5a5'];
+const fallbackNames = ['ancientEnjoyer', 'xX_awp_Xx', 'mirage_mama', 'brotkasten', 'eco_round', 'nadeking', 'flick_ingo'];
+const chatNames = await fetch('demo.json').then((r) => r.json()).then((d) => d.chatNames).catch(() => null);
+const NAMES = (Array.isArray(chatNames) && chatNames.length ? chatNames : fallbackNames).map((n, i) => [n, COLORS[i % COLORS.length]]);
 const LINES = ['wie viel elo noch bis lvl 8?', 'das overlay ist clean', 'ONE TAP 😳', 'eco runde?', 'ggwp', 'welche sens spielst du', 'smoke mid bitte', 'lets gooo', 'der crosshair 🔥', '!elo', 'clutch incoming', 'HS-Quote ist crazy'];
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 function say(text, highlight = false, who = pick(NAMES)) {
@@ -1009,7 +1013,7 @@ function kill() {
 
 const alertBox = document.getElementById('alert');
 function follow() {
-  document.getElementById('alertName').textContent = pick(['headshot_hanna', 'clutchminister', 'smokecriminal', 'pixelpeek']);
+  document.getElementById('alertName').textContent = pick(NAMES)[0];
   alertBox.classList.add('on');
   setTimeout(() => alertBox.classList.remove('on'), 2600);
 }
