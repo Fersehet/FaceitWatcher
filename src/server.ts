@@ -1,5 +1,7 @@
 import express, { type Response } from 'express';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { AssetCache, isFaceitUrl } from './assets.ts';
 import { config, isDemo } from './config.ts';
 import { FaceitClient } from './faceit/client.ts';
 import { DemoSource } from './faceit/demo.ts';
@@ -13,6 +15,8 @@ const OWNER = 'local';
 const storage = new SqliteStorage(config.dbPath);
 const source = isDemo ? new DemoSource() : new FaceitClient(config.faceitApiKey);
 const tracker = new Tracker(source, storage, isDemo ? 15 : config.pollIntervalSeconds, config.defaultNickname);
+
+const assets = new AssetCache(join(dirname(config.dbPath), 'assets'), config.levelIconUrl);
 
 if (storage.listOverlays(OWNER).length === 0) storage.saveOverlay(createDefaultOverlay());
 
@@ -42,6 +46,29 @@ app.get('/api/events', (req, res) => {
     clearInterval(ping);
     clients.delete(res);
   });
+});
+
+// Faceit-Bilder aus dem lokalen Cache (für Overlay und Discord-Bot)
+app.get('/assets/level/:level', async (req, res) => {
+  const asset = await assets.level(Number.parseInt(req.params.level, 10) || 1);
+  if (!asset) return void res.status(404).end();
+  res.type(asset.contentType).set('Cache-Control', 'public, max-age=86400').send(asset.body);
+});
+
+app.get('/assets/remote', async (req, res) => {
+  const url = String(req.query.url ?? '');
+  // Nur Faceit-Bilder oder der selbst eingetragene Rahmen, damit der Server kein offener Proxy ist
+  const allowed = isFaceitUrl(url) || (url !== '' && url === tracker.state.avatarFrameOverride);
+  const asset = allowed ? await assets.remote(url, !isFaceitUrl(url)) : null;
+  if (!asset) return void res.status(404).end();
+  res.type(asset.contentType).set('Cache-Control', 'public, max-age=86400').send(asset.body);
+});
+
+app.put('/api/avatar-frame', async (req, res) => {
+  const url = String(req.body?.url ?? '').trim();
+  if (url && !url.startsWith('https://')) return void res.status(400).json({ error: 'Bitte eine https-Adresse angeben' });
+  await tracker.setAvatarFrameOverride(url);
+  res.json(tracker.state);
 });
 
 app.get('/api/state', (_req, res) => res.json(tracker.state));
