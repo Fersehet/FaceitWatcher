@@ -52,6 +52,9 @@ const SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 /** So viele Abrufe wird auf die Elo-Änderung eines neuen Matches gewartet. */
 const ELO_WAIT_POLLS = 3;
 
+/** Schlägt das Nachschlagen der Elo bei Faceit fehl, wird es frühestens nach 5 Minuten wiederholt. */
+const ELO_RETRY_MS = 5 * 60 * 1000;
+
 /** Fragt Faceit regelmäßig ab, speichert neue Stände und verteilt den Live-Zustand an alle Overlays. */
 export class Tracker extends EventEmitter {
   private timer: NodeJS.Timeout | null = null;
@@ -228,8 +231,8 @@ export class Tracker extends EventEmitter {
     return before.length ? before[before.length - 1].elo : null;
   }
 
-  /** Für diese Matches wurde die Elo schon bei Faceit nachgeschlagen (nur einmal pro Satz fehlender Matches). */
-  private eloLookedUp = '';
+  /** Für diese Matches wurde die Elo zuletzt bei Faceit nachgeschlagen; ohne Erfolg erst nach ELO_RETRY_MS erneut. */
+  private eloLookup = { key: '', at: 0 };
   /** Ob Faceits "Recent Results" mit dem neuesten Match beginnen; wird aus den gespeicherten Matches erkannt. */
   private newestFirst = true;
 
@@ -242,15 +245,18 @@ export class Tracker extends EventEmitter {
     const stored = this.storage.listMatches(player.playerId, count);
     const missing = stored.filter((m) => m.eloChange === null);
     const key = missing.map((m) => m.matchId).join();
-    if (missing.length && this.source.fetchEloHistory && key !== this.eloLookedUp) {
-      this.eloLookedUp = key;
+    const due = key !== this.eloLookup.key || Date.now() - this.eloLookup.at > ELO_RETRY_MS;
+    if (missing.length && this.source.fetchEloHistory && due) {
+      this.eloLookup = { key, at: Date.now() };
       const history = await this.source.fetchEloHistory(player.playerId, count + 1);
       for (const m of missing) {
         const i = history.findIndex((h) => h.matchId === m.matchId);
-        if (i < 0 || i + 1 >= history.length) continue;
+        if (i < 0) continue;
+        const delta = history[i].delta ?? (i + 1 < history.length ? history[i].elo - history[i + 1].elo : null);
+        if (delta === null) continue;
         m.eloAfter = history[i].elo;
-        m.eloBefore = history[i + 1].elo;
-        m.eloChange = m.eloAfter - m.eloBefore;
+        m.eloBefore = history[i].elo - delta;
+        m.eloChange = delta;
         this.storage.saveMatch(m);
       }
     }
