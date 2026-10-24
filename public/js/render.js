@@ -175,8 +175,8 @@ function widgetContent(widget, style, state) {
       const [w, h] = [size * 2.086, size * 1.4];
       for (const m of recent) {
         const color = m.result === 'W' ? style.positiveColor : style.negativeColor;
-        // Ohne bekannte Elo-Änderung nur ein Strich, nie W/L
-        const text = m.eloChange == null ? '–' : `${m.eloChange > 0 ? '+' : ''}${m.eloChange}`;
+        // Nur die Zahl ohne Vorzeichen, Sieg/Niederlage zeigt die Farbe. Ohne bekannte Elo-Änderung bleibt der Kasten leer.
+        const text = m.eloChange == null ? '' : String(Math.abs(m.eloChange));
         row.appendChild(
           el(
             'div',
