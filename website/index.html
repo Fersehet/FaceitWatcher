@@ -331,6 +331,62 @@ details[open] p { animation: rise .35s ease; }
   .i-ring, .i-arrow { stroke-dashoffset: 0; }
   .i-cross, .i-core, .i-head, .intro-word, .intro-bar { opacity: 1; transform: none; }
 }
+
+/* Kategorien-Leiste rechts: Punkte je Abschnitt, Linie füllt sich beim Scrollen */
+.rail { position: fixed; right: max(18px, env(safe-area-inset-right, 0px)); top: 50%; z-index: 8; display: grid; gap: 22px; transform: translate(30px, -50%); opacity: 0; transition: opacity .5s ease .2s, transform .5s ease .2s; }
+.ready .rail { opacity: 1; transform: translate(0, -50%); }
+.rail-track { position: absolute; right: 5px; top: 9px; bottom: 9px; width: 2px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.rail-track i { position: absolute; inset: 0; background: var(--accent); box-shadow: 0 0 8px var(--glow); transform-origin: top; transform: scaleY(var(--fill, 0)); }
+.rail a { position: relative; display: flex; align-items: center; justify-content: flex-end; gap: 12px; height: 18px; text-decoration: none; color: var(--muted); font: 600 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; }
+.rail a::after { content: ""; width: 12px; height: 12px; flex: none; border-radius: 50%; background: var(--bg); border: 2px solid var(--line); box-sizing: border-box; transition: transform .3s cubic-bezier(.3, 1.6, .5, 1), background .3s, border-color .3s, box-shadow .3s; }
+.rail a.passed::after { border-color: var(--accent); }
+.rail a.active::after { background: var(--accent); border-color: var(--accent); transform: scale(1.35); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent), 0 0 14px var(--glow); }
+.rail span { padding: 5px 8px; border-radius: 5px; background: color-mix(in srgb, var(--bg) 85%, transparent); border: 1px solid var(--line); backdrop-filter: blur(6px); opacity: 0; transform: translateX(8px); transition: opacity .25s, transform .25s, color .25s; pointer-events: none; white-space: nowrap; }
+.rail span b { color: var(--accent); margin-right: 6px; font-weight: 700; }
+.rail a:hover span, .rail a:focus-visible span, .rail a.active span { opacity: 1; transform: none; }
+.rail a.active span { color: var(--fg); }
+.rail:hover a span { opacity: 1; transform: none; }
+@media (max-width: 1100px) { .rail { display: none; } }
+
+/* Handy: Kategorien als wischbare Leiste unter der Navigation */
+.mnav { display: none; }
+@media (max-width: 720px) {
+  .nav .wrap { padding-block: 10px; }
+  .brand { font-size: 17px; }
+  .mnav { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 0 var(--gutter-r) 10px var(--gutter-l); scroll-snap-type: x proximity; scroll-padding-inline: var(--gutter-l) var(--gutter-r); -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
+  .mnav::-webkit-scrollbar { display: none; }
+  .mnav a { flex: none; scroll-snap-align: start; text-decoration: none; font: 600 13px/1 var(--f-display); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line); transition: color .2s, background .2s, border-color .2s; }
+  .mnav a.active { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+  section { scroll-margin-top: 104px; padding-block: 56px; }
+  .hero { padding-block: 36px 32px; }
+  .hero h1 { font-size: clamp(34px, 10vw, 44px); }
+  .lead { font-size: 17px; }
+  .hero .actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .hero .actions .btn { justify-content: center; }
+  .feat { padding: 22px 20px; }
+  .panel { padding: 16px; }
+  .cta { text-align: center; }
+  .cta .btn { justify-self: stretch; justify-content: center; }
+  footer .wrap { flex-direction: column; gap: 6px; }
+}
+
+/* Handy: Stream-Szene ohne Chat, damit Overlay und Cam lesbar bleiben */
+@media (max-width: 600px) {
+  .demo { margin-inline: calc(-1 * var(--gutter-l)) calc(-1 * var(--gutter-r)); border-radius: 0; border-inline: 0; }
+  .stream { aspect-ratio: 4 / 3; }
+  .stream .game { right: 0; }
+  .stream .chat, .stream .killfeed { display: none; }
+  .cam { width: 30%; }
+  .hud { font-size: 3.4cqw; }
+  .gun { width: 52%; }
+  .alert { left: 50%; font-size: 2.6cqw; }
+  .alert small { font-size: 1.8cqw; }
+  .controls { padding: 16px var(--gutter-r) 16px var(--gutter-l); }
+  .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(-1 * var(--gutter-l)) calc(-1 * var(--gutter-r)); padding-inline: var(--gutter-l) var(--gutter-r); }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { flex: none; }
+  .demo-note { padding-inline: var(--gutter-l) var(--gutter-r); }
+}
 </style>
 </head>
 <body>
@@ -368,6 +424,21 @@ details[open] p { animation: rise .35s ease; }
       <a class="btn primary" href="https://github.com/fersehet/faceitwatcher" target="_blank" rel="noopener">GitHub</a>
     </div>
   </div>
+  <div class="mnav" id="mnav">
+    <a href="#top">Start</a>
+    <a href="#features">Funktionen</a>
+    <a href="#stats">Statistiken</a>
+    <a href="#setup">Einrichtung</a>
+    <a href="#faq">FAQ</a>
+  </div>
+</nav>
+<nav class="rail" id="rail" aria-label="Abschnitte">
+  <div class="rail-track" aria-hidden="true"><i></i></div>
+  <a href="#top"><span><b>01</b>Start</span></a>
+  <a href="#features"><span><b>02</b>Funktionen</span></a>
+  <a href="#stats"><span><b>03</b>Statistiken</span></a>
+  <a href="#setup"><span><b>04</b>Einrichtung</span></a>
+  <a href="#faq"><span><b>05</b>FAQ</span></a>
 </nav>
 
 <header class="hero" id="top">
@@ -692,17 +763,44 @@ details[open] p { animation: rise .35s ease; }
   };
   addEventListener('scroll', onScroll, { passive: true });
   onScroll();
-  if ('IntersectionObserver' in window) {
-    var links = {};
-    document.querySelectorAll('.nav-links a[href^="#"]').forEach(function (a) { links[a.getAttribute('href').slice(1)] = a; });
-    var spy = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) {
-        var a = links[e.target.id];
-        if (a) a.classList.toggle('active', e.isIntersecting);
+  var secIds = ['top', 'features', 'stats', 'setup', 'faq'];
+  var secs = secIds.map(function (id) { return document.getElementById(id); });
+  var railFill = document.querySelector('.rail-track i');
+  var groups = ['.nav-links', '#rail', '#mnav'].map(function (sel) {
+    var map = {};
+    document.querySelectorAll(sel + ' a[href^="#"]').forEach(function (a) { map[a.getAttribute('href').slice(1)] = a; });
+    return map;
+  });
+  var mnav = document.getElementById('mnav');
+  var lastActive = '';
+  var spy = function () {
+    var mid = innerHeight * 0.4, idx = 0, frac = 0;
+    var atEnd = innerHeight + scrollY >= document.documentElement.scrollHeight - 4;
+    secs.forEach(function (sec, i) { if (sec.getBoundingClientRect().top <= mid) idx = i; });
+    if (atEnd) idx = secs.length - 1;
+    else if (idx < secs.length - 1) {
+      var a = secs[idx].getBoundingClientRect().top, b = secs[idx + 1].getBoundingClientRect().top;
+      frac = Math.min(1, Math.max(0, (mid - a) / (b - a)));
+    }
+    railFill.parentNode.parentNode.style.setProperty('--fill', (idx + frac) / (secs.length - 1));
+    var id = secIds[idx];
+    groups.forEach(function (map, g) {
+      secIds.forEach(function (sid, i) {
+        var link = map[sid];
+        if (!link) return;
+        link.classList.toggle('active', sid === id && !(g === 0 && sid === 'top'));
+        link.classList.toggle('passed', i < idx);
       });
-    }, { rootMargin: '-45% 0px -50% 0px' });
-    Object.keys(links).forEach(function (id) { var sec = document.getElementById(id); if (sec) spy.observe(sec); });
-  }
+    });
+    if (id !== lastActive) {
+      lastActive = id;
+      var chip = groups[2][id];
+      if (chip && getComputedStyle(mnav).display !== 'none') mnav.scrollBy({ left: chip.getBoundingClientRect().left - mnav.getBoundingClientRect().left - 16, behavior: reduced ? 'auto' : 'smooth' });
+    }
+  };
+  addEventListener('scroll', spy, { passive: true });
+  addEventListener('resize', spy);
+  spy();
 
   // Funktionskarten: Lichtschein folgt der Maus
   document.querySelectorAll('.feat').forEach(function (card) {
@@ -770,7 +868,9 @@ function draw() {
 // Overlay passend zur Szenengröße skalieren
 function fit() {
   const game = scene.querySelector('.game').clientWidth;
-  const scale = Math.min(1.2, (game * 0.44) / overlay.style.width);
+  // Auf dem Handy etwas größer, damit die Werte lesbar bleiben
+  const share = scene.clientWidth < 520 ? 0.64 : 0.44;
+  const scale = Math.min(1.2, (game * share) / overlay.style.width);
   container.style.transform = `scale(${scale})`;
   const w = overlay.style.width * scale, h = overlay.style.height * scale;
   slot.style.width = `${w}px`;
