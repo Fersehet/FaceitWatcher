@@ -45,7 +45,7 @@ Den Nickname setzt du direkt im Editor (oder als `FACEIT_NICKNAME` in `.env`).
 
 ## Docker (z. B. auf einem Heimserver)
 
-`docker-compose.yml` startet zwei Container: den FaceitWatcher-Server (Editor, Overlay, Faceit-Abfrage) und den Discord-Bot.
+`docker-compose.yml` startet den FaceitWatcher-Server (Editor, Overlay, Faceit-Abfrage).
 
 ```bash
 cp .env.example .env      # Werte eintragen, siehe unten
@@ -63,34 +63,9 @@ Der Server kann zusätzlich eine statische Website unter `/site/` ausliefern. Si
 
 Mit `SITE_HOST=deine-domain.de` in `.env` beantwortet der Server unter dieser Domain nur Anfragen für die Website (z. B. hinter Nginx Proxy Manager). Editor, Overlays und API sind darüber nicht erreichbar und bleiben im Heimnetz.
 
-## Discord-Bot
+## Schnittstelle für andere Clients
 
-Nach jedem beendeten Match postet der Bot das Ergebnis in einen Channel: Sieg/Niederlage, Map, Endstand, Elo-Änderung, K/D/A, K/D, ADR, HS % und MVPs. Der Bot fragt Faceit nicht selbst ab, er bekommt die Matches vom Server. Fehlt eine Nachricht, weil der Bot kurz weg war, holt er sie beim Wiederverbinden nach. Beim allerersten Start werden alte Matches übersprungen.
-
-### Bot-Token und Channel-ID holen
-
-1. Im [Discord Developer Portal](https://discord.com/developers/applications) auf **New Application** klicken und einen Namen vergeben (z. B. „FaceitWatcher“).
-2. Links **Bot** öffnen, **Reset Token** klicken und den Token kopieren. Er gehört nur in deine `.env` als `DISCORD_BOT_TOKEN=`. Nirgends posten, er ist wie ein Passwort.
-3. Links **OAuth2 → URL Generator**: Scope **bot** anhaken, darunter die Rechte **View Channels**, **Send Messages** und **Embed Links**. Die erzeugte URL im Browser öffnen und den Bot auf deinen Server einladen.
-4. In Discord unter **Einstellungen → Erweitert** den **Entwicklermodus** einschalten. Dann Rechtsklick auf den Channel → **Kanal-ID kopieren** und als `DISCORD_CHANNEL_ID=` eintragen.
-
-Privilegierte Intents braucht der Bot nicht, er schreibt nur.
-
-**Ohne eigenen Bot geht es auch per Webhook:** Channel bearbeiten → **Integrationen → Webhooks → Neuer Webhook**, URL kopieren und als `DISCORD_WEBHOOK_URL=` eintragen (dann Token und Channel-ID leer lassen).
-
-### Testen
-
-```bash
-docker compose run --rm discord-bot node --import tsx src/bot/index.ts --test
-```
-
-Schickt eine Beispielnachricht in den Channel. Ohne Docker: `npm run bot:test`. Ohne Faceit-API-Key läuft der Server im Demo-Modus und erfindet regelmäßig Matches, so siehst du den Bot auch ohne echte Spiele arbeiten. Ist gar nichts für Discord eingetragen, schreibt der Bot die Ergebnisse nur ins Log.
-
-Ohne Docker: Server mit `npm start`, Bot in einem zweiten Terminal mit `npm run bot`.
-
-## Schnittstelle für Discord-Bot und andere Clients
-
-Die Faceit-API wird **nur vom Server** abgefragt. Overlay, Editor und Discord-Bot lesen dieselben gespeicherten Daten:
+Die Faceit-API wird **nur vom Server** abgefragt. Overlay und Editor lesen dieselben gespeicherten Daten:
 
 | Endpunkt | Inhalt |
 | --- | --- |
@@ -120,7 +95,6 @@ src/
   storage/storage.ts Speicher-Interface
   storage/sqlite.ts  SQLite-Umsetzung (node:sqlite, keine nativen Abhängigkeiten)
   overlays/          Overlay-Datenmodell und Standard-Layout
-  bot/               Discord-Bot (liest Matches vom Server, postet sie in Discord)
 public/
   editor.html        Editor
   overlay.html       OBS-Overlay
