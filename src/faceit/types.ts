@@ -61,7 +61,7 @@ export interface StatsSource {
   /** Die letzten `count` Matches, neueste zuerst. Details werden nur für Matches geladen, die `isKnown` nicht kennt. */
   fetchRecentMatches(playerId: string, count: number, isKnown: (matchId: string) => boolean): Promise<MatchDetails[]>;
   /** Bild-URL des Avatar-Rahmens oder '' (nicht Teil der offiziellen Data API, daher Best-Effort). */
-  fetchAvatarFrame(nickname: string): Promise<string>;
+  fetchAvatarFrame(playerId: string): Promise<string>;
 }
 
 /** Faceit CS2 Level-Grenzen (Mindest-Elo pro Level). */
