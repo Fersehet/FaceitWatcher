@@ -147,8 +147,10 @@ function widgetContent(widget, style, state) {
     }
     case 'sessionRecord': {
       if (!s) return null;
-      const wrap = el('div', { fontWeight: 700 });
-      wrap.append(el('span', { color: style.positiveColor }, `${s.wins}W`), el('span', {}, ' - '), el('span', { color: style.negativeColor }, `${s.losses}L`));
+      // Feste Breite für „0W - 0L“, rechtsbündig: Bei zweistelligen Zahlen wächst die Bilanz nach links,
+      // im Standard-Layout (x 336, Schrift 18) bleibt das rechte Ende bündig mit dem Elo-Balken bei x 400
+      const wrap = el('div', { fontWeight: 700, display: 'flex', justifyContent: 'flex-end', width: `${size * 3.56}px` });
+      wrap.append(el('span', { color: style.positiveColor }, `${s.wins}W`), el('span', {}, '\u00a0-\u00a0'), el('span', { color: style.negativeColor }, `${s.losses}L`));
       return wrap;
     }
     case 'matches':
