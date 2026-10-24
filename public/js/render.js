@@ -135,9 +135,12 @@ function widgetContent(widget, style, state) {
       const bar = el('div', { height: `${Math.max(4, size * 0.5)}px`, borderRadius: '99px', background: 'rgba(255,255,255,0.15)', overflow: 'hidden' });
       bar.appendChild(el('div', { width: `${pct * 100}%`, height: '100%', background: style.accentColor }));
       wrap.appendChild(bar);
-      wrap.appendChild(
-        el('div', { marginTop: '3px', color: style.labelColor, display: 'flex', justifyContent: 'space-between' }, next ? `${next - p.elo} bis Level ${p.level + 1}` : `Level 10, +${p.elo - min}`),
-      );
+      // Links die Elo bis zum Abstieg ins Level darunter (wie bei Faceit), rechts die Elo bis zum nächsten Level
+      const down = idx > 0 ? String(p.elo - min + 1) : '';
+      const up = next ? String(next - p.elo) : '';
+      const labels = el('div', { marginTop: '3px', color: style.labelColor, display: 'flex', justifyContent: 'space-between' });
+      labels.append(el('span', {}, down), el('span', {}, up));
+      wrap.appendChild(labels);
       return wrap;
     }
     case 'eloToday': {
