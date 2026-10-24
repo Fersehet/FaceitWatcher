@@ -93,11 +93,11 @@
         "type": "sessionRecord",
         "enabled": true,
         "x": 336,
-        "y": 16,
+        "y": 30,
         "fontSize": 18,
         "color": "",
         "label": "Heute",
-        "showLabel": true
+        "showLabel": false
       },
       {
         "id": "matches",
@@ -113,7 +113,7 @@
       {
         "id": "winRate",
         "type": "winRate",
-        "enabled": true,
+        "enabled": false,
         "x": 16,
         "y": 128,
         "fontSize": 16,
@@ -124,12 +124,12 @@
       {
         "id": "seasonWinRate",
         "type": "seasonWinRate",
-        "enabled": false,
-        "x": 300,
-        "y": 120,
+        "enabled": true,
+        "x": 16,
+        "y": 128,
         "fontSize": 16,
         "color": "",
-        "label": "Season Winrate",
+        "label": "Season WR",
         "showLabel": true
       },
       {
@@ -234,8 +234,15 @@
       "wins": 0,
       "losses": 0
     },
-    "season": null,
-    "error": null
+    "season": {
+      "start": "2026-08-05",
+      "matches": 104,
+      "wins": 48,
+      "losses": 56,
+      "winRate": 46
+    },
+    "error": null,
+    "seasonStart": "2026-08-05"
   },
   "chatNames": []
 }

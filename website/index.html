@@ -849,7 +849,7 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const scene = document.getElementById('scene');
 const slot = document.getElementById('slot');
 const container = document.getElementById('overlay');
-const TOGGLES = ['avatar', 'nickname', 'level', 'elo', 'eloProgress', 'eloToday', 'sessionRecord', 'kd', 'winRate', 'hsPercent', 'adr', 'matches', 'recentResults'];
+const TOGGLES = ['avatar', 'nickname', 'level', 'elo', 'eloProgress', 'eloToday', 'sessionRecord', 'kd', 'seasonWinRate', 'hsPercent', 'adr', 'matches', 'recentResults'];
 
 let overlay, state, live = false;
 
@@ -1063,6 +1063,12 @@ function playMatch() {
   p.matches += 1;
   if (win) p.wins += 1;
   p.winRate = Math.round((p.wins / p.matches) * 100);
+  if (state.season) {
+    const se = state.season;
+    se.matches += 1;
+    if (win) se.wins += 1; else se.losses += 1;
+    se.winRate = Math.round((se.wins / se.matches) * 100);
+  }
   p.kd = Math.round((totals.kills / totals.deaths) * 100) / 100;
   p.currentStreak = win ? p.currentStreak + 1 : 0;
   p.longestStreak = Math.max(p.longestStreak, p.currentStreak);
