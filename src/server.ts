@@ -68,7 +68,7 @@ app.get('/api/events', (req, res) => {
   });
 });
 
-// Faceit-Bilder aus dem lokalen Cache (für Overlay und Discord-Bot)
+// Faceit-Bilder aus dem lokalen Cache (für Editor und Overlay)
 app.get('/assets/level/:level', async (req, res) => {
   const asset = await assets.level(Number.parseInt(req.params.level, 10) || 1);
   if (!asset) return void res.status(404).end();
@@ -92,7 +92,7 @@ app.put('/api/avatar-frame', async (req, res) => {
 });
 
 app.get('/api/state', (_req, res) => res.json(tracker.state));
-// Für den Discord-Bot und andere Clients: gespeicherte Matches, neueste zuerst
+// Gespeicherte Matches, neueste zuerst
 app.get('/api/matches', (req, res) => {
   const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
   res.json(storage.listMatches(tracker.state.player?.playerId ?? null, limit));

@@ -25,7 +25,7 @@ export interface MatchRecord {
   wins: number;
 }
 
-/** Ein abgeschlossenes Match aus Sicht des getrackten Spielers. Wird gespeichert und an Overlay und Discord-Bot verteilt. */
+/** Ein abgeschlossenes Match aus Sicht des getrackten Spielers. Wird gespeichert und an Editor und Overlay verteilt. */
 export interface MatchResult {
   matchId: string;
   playerId: string;
