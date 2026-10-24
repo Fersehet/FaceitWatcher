@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Impressum · FaceitWatcher</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<style>
+/* Bewusst ohne externe Schriften: die Seite lädt nichts von Dritten */
+:root {
+  color-scheme: dark;
+  --bg: #0d1017;
+  --surface: #1a2130;
+  --line: #2a3346;
+  --fg: #e9edf5;
+  --muted: #9aa5ba;
+  --accent: #ff5500;
+  --gutter-l: max(16px, env(safe-area-inset-left, 0px));
+  --gutter-r: max(16px, env(safe-area-inset-right, 0px));
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 400 17px/1.65 "Segoe UI", system-ui, -apple-system, sans-serif; }
+a { color: var(--accent); }
+.wrap { max-width: 780px; margin: 0 auto; padding-left: var(--gutter-l); padding-right: var(--gutter-r); }
+.nav { border-bottom: 1px solid var(--line); }
+.nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--fg); text-decoration: none; font-weight: 700; font-size: 19px; }
+.brand img { width: 30px; height: 30px; }
+.back { color: var(--muted); text-decoration: none; font-size: 15px; }
+.back:hover { color: var(--fg); }
+main { padding-block: 48px 72px; }
+h1 { font-size: clamp(32px, 6vw, 44px); line-height: 1.1; margin: 0 0 8px; }
+.eyebrow { font: 600 13px/1 ui-monospace, Consolas, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+h2 { font-size: 21px; margin: 40px 0 10px; }
+p, address { margin: 0 0 12px; color: var(--muted); font-style: normal; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; }
+.card p, .card address { color: var(--fg); }
+.card > :last-child { margin-bottom: 0 !important; }
+/* Platzhalter, die vor der Veröffentlichung ersetzt werden müssen */
+mark { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--fg); border: 1px dashed var(--accent); border-radius: 4px; padding: 0 4px; }
+footer { border-top: 1px solid var(--line); padding-block: 24px; color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<nav class="nav" aria-label="Navigation">
+  <div class="wrap">
+    <a class="brand" href="./"><img src="logo.svg" alt="" width="30" height="30">FaceitWatcher</a>
+    <a class="back" href="./">← Zur Startseite</a>
+  </div>
+</nav>
+
+<main class="wrap">
+  <span class="eyebrow">Rechtliches</span>
+  <h1>Impressum</h1>
+
+  <h2>Angaben gemäß § 5 DDG</h2>
+  <div class="card">
+    <address>
+      <mark>Vorname Nachname</mark><br>
+      <mark>Straße Hausnummer</mark><br>
+      <mark>PLZ Ort</mark><br>
+      Deutschland
+    </address>
+  </div>
+
+  <h2>Kontakt</h2>
+  <div class="card">
+    <p>E-Mail: <mark>kontakt@example.de</mark></p>
+    <p>Telefon: <mark>+49 000 0000000</mark></p>
+  </div>
+
+  <h2>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
+  <p><mark>Vorname Nachname</mark>, Anschrift wie oben.</p>
+
+  <h2>Verbraucherstreitbeilegung</h2>
+  <p>Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
+
+  <h2>Haftung für Inhalte</h2>
+  <p>Als Diensteanbieter sind wir für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Wir sind jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen. Verpflichtungen zur Entfernung oder Sperrung der Nutzung von Informationen nach den allgemeinen Gesetzen bleiben hiervon unberührt. Eine diesbezügliche Haftung ist erst ab dem Zeitpunkt der Kenntnis einer konkreten Rechtsverletzung möglich. Bei Bekanntwerden entsprechender Rechtsverletzungen entfernen wir diese Inhalte umgehend.</p>
+
+  <h2>Haftung für Links</h2>
+  <p>Diese Seite enthält Links zu externen Websites Dritter (zum Beispiel GitHub und FACEIT), auf deren Inhalte wir keinen Einfluss haben. Für diese fremden Inhalte ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich. Die verlinkten Seiten wurden zum Zeitpunkt der Verlinkung auf mögliche Rechtsverstöße überprüft. Rechtswidrige Inhalte waren zu diesem Zeitpunkt nicht erkennbar. Bei Bekanntwerden von Rechtsverletzungen entfernen wir derartige Links umgehend.</p>
+
+  <h2>Urheberrecht und Marken</h2>
+  <p>Die Inhalte dieser Seite unterliegen dem deutschen Urheberrecht. Der Quellcode von FaceitWatcher ist als Open Source auf <a href="https://github.com/fersehet/faceitwatcher" target="_blank" rel="noopener">GitHub</a> veröffentlicht. Dort gelten die Bedingungen der jeweiligen Lizenz.</p>
+  <p>FaceitWatcher ist ein privates Projekt und steht in keiner Verbindung zu FACEIT. FACEIT und die Faceit-Level-Symbole sind Marken bzw. Werke ihrer jeweiligen Inhaber. Die in der Vorschau gezeigten Statistiken stammen aus der öffentlichen Faceit-Schnittstelle.</p>
+</main>
+
+<footer>
+  <div class="wrap">FaceitWatcher · <a href="./">Startseite</a></div>
+</footer>
+</body>
+</html>
