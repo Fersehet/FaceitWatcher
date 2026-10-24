@@ -54,7 +54,6 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .nav-links { display: flex; gap: 22px; align-items: center; font-weight: 500; }
 .nav-links a { text-decoration: none; color: var(--muted); }
 .nav-links a:hover { color: var(--fg); }
-@media (max-width: 720px) { .nav-links a:not(.btn) { display: none; } }
 
 .btn { display: inline-flex; align-items: center; gap: 8px; font: 600 15px/1 var(--f-display); letter-spacing: .04em; text-transform: uppercase; text-decoration: none; padding: 13px 20px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; }
 .btn:hover { border-color: var(--muted); }
@@ -263,10 +262,6 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wr
 .brand-mark { transition: transform .35s cubic-bezier(.2, .8, .3, 1), filter .35s; transform-origin: 50% 50%; }
 .brand:hover .brand-mark, .brand:focus-visible .brand-mark { transform: scale(1.28); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 70%, transparent)); animation: scope-in .45s cubic-bezier(.2, .8, .3, 1); }
 @keyframes scope-in { 0% { transform: scale(1); } 55% { transform: scale(1.38); } 100% { transform: scale(1.28); } }
-.nav-links a:not(.btn) { position: relative; transition: color .2s; }
-.nav-links a:not(.btn)::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: var(--accent); transform: scaleX(0); transition: transform .25s ease; }
-.nav-links a.active, .nav-links a:not(.btn):hover { color: var(--fg); }
-.nav-links a.active::after, .nav-links a:not(.btn):hover::after { transform: scaleX(1); }
 
 /* Buttons */
 .btn { position: relative; overflow: hidden; transition: transform .2s, box-shadow .2s, border-color .2s, filter .2s; }
@@ -356,16 +351,10 @@ details[open] p { animation: rise .35s ease; }
 .rail:hover a span { opacity: 1; transform: none; }
 @media (max-width: 1100px) { .rail { display: none; } }
 
-/* Handy: Kategorien als wischbare Leiste unter der Navigation */
-.mnav { display: none; }
 @media (max-width: 720px) {
   .nav .wrap { padding-block: 10px; }
   .brand { font-size: 17px; }
-  .mnav { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 0 var(--gutter-r) 10px var(--gutter-l); scroll-snap-type: x proximity; scroll-padding-inline: var(--gutter-l) var(--gutter-r); -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
-  .mnav::-webkit-scrollbar { display: none; }
-  .mnav a { flex: none; scroll-snap-align: start; text-decoration: none; font: 600 13px/1 var(--f-display); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line); transition: color .2s, background .2s, border-color .2s; }
-  .mnav a.active { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
-  section { scroll-margin-top: 104px; padding-block: 56px; }
+  section { scroll-margin-top: 64px; padding-block: 56px; }
   .hero { padding-block: 36px 32px; }
   .hero h1 { font-size: clamp(34px, 10vw, 44px); }
   .lead { font-size: 17px; }
@@ -425,19 +414,8 @@ details[open] p { animation: rise .35s ease; }
   <div class="wrap">
     <a class="brand" href="#top"><img class="brand-mark" src="logo.svg" alt="" width="30" height="30">FaceitWatcher</a>
     <div class="nav-links">
-      <a href="#features">Funktionen</a>
-      <a href="#stats">Statistiken</a>
-      <a href="#setup">Einrichtung</a>
-      <a href="#faq">FAQ</a>
       <a class="btn primary" href="https://github.com/fersehet/faceitwatcher" target="_blank" rel="noopener">GitHub</a>
     </div>
-  </div>
-  <div class="mnav" id="mnav">
-    <a href="#top">Start</a>
-    <a href="#features">Funktionen</a>
-    <a href="#stats">Statistiken</a>
-    <a href="#setup">Einrichtung</a>
-    <a href="#faq">FAQ</a>
   </div>
 </nav>
 <nav class="rail" id="rail" aria-label="Abschnitte">
@@ -774,13 +752,11 @@ details[open] p { animation: rise .35s ease; }
   var secIds = ['top', 'features', 'stats', 'setup', 'faq'];
   var secs = secIds.map(function (id) { return document.getElementById(id); });
   var railFill = document.querySelector('.rail-track i');
-  var groups = ['.nav-links', '#rail', '#mnav'].map(function (sel) {
+  var groups = ['#rail'].map(function (sel) {
     var map = {};
     document.querySelectorAll(sel + ' a[href^="#"]').forEach(function (a) { map[a.getAttribute('href').slice(1)] = a; });
     return map;
   });
-  var mnav = document.getElementById('mnav');
-  var lastActive = '';
   var spy = function () {
     var mid = innerHeight * 0.4, idx = 0, frac = 0;
     var atEnd = innerHeight + scrollY >= document.documentElement.scrollHeight - 4;
@@ -796,15 +772,10 @@ details[open] p { animation: rise .35s ease; }
       secIds.forEach(function (sid, i) {
         var link = map[sid];
         if (!link) return;
-        link.classList.toggle('active', sid === id && !(g === 0 && sid === 'top'));
+        link.classList.toggle('active', sid === id);
         link.classList.toggle('passed', i < idx);
       });
     });
-    if (id !== lastActive) {
-      lastActive = id;
-      var chip = groups[2][id];
-      if (chip && getComputedStyle(mnav).display !== 'none') mnav.scrollBy({ left: chip.getBoundingClientRect().left - mnav.getBoundingClientRect().left - 16, behavior: reduced ? 'auto' : 'smooth' });
-    }
   };
   addEventListener('scroll', spy, { passive: true });
   addEventListener('resize', spy);
