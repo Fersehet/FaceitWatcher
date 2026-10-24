@@ -1,4 +1,5 @@
 import express, { type Response } from 'express';
+import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AssetCache, isFaceitUrl } from './assets.ts';
@@ -43,20 +44,12 @@ tracker.on('state', (state) => broadcast('state', state));
 tracker.on('match', (match) => broadcast('match', match));
 
 const app = express();
-// Hinter Nginx Proxy Manager: echte Besucher-IP (für die Login-Sperre) und https-Erkennung (für sichere Cookies)
+// Hinter einem Reverse Proxy: echte Besucher-IP (für die Login-Sperre) und https-Erkennung (für sichere Cookies)
 app.set('trust proxy', 'loopback, linklocal, uniquelocal');
 
-// Website (eigenes, privates Repo) auf / und unter /site. Fehlt der Ordner, geht es einfach weiter.
-// Die Vorschau dort nutzt den echten Overlay-Renderer und das erste gespeicherte Overlay (nur lesend).
-const site = express.Router();
-site.get('/js/render.js', (_req, res) => res.sendFile(fileURLToPath(new URL('../public/js/render.js', import.meta.url))));
-site.get('/live.json', (_req, res) => {
-  const overlay = storage.listOverlays(OWNER)[0];
-  res.set('Cache-Control', 'no-cache').json({ overlay: overlay ? upgradeOverlay(overlay) : null, state: tracker.state });
-});
-site.use(express.static(config.siteDir));
-app.use(site);
-app.use('/site', site);
+// Optionale eigene Startseite (Ordner SITE_DIR) auf /. Ohne Login erreichbar, fehlt sie, führt / zum Editor.
+app.use(express.static(config.siteDir));
+const hasStartPage = () => existsSync(join(config.siteDir, 'index.html'));
 
 /** Ohne Login erreichbar: Overlays und Statistiken nur lesend (für OBS und andere Clients), Bilder und der Login selbst. */
 function isPublic(req: express.Request) {
@@ -76,7 +69,7 @@ function isPublic(req: express.Request) {
 
 const hostOf = (url: string) => URL.parse(url)?.host ?? null;
 
-// Editor und alle Änderungen nur nach Login, egal ob über localhost, LAN oder die Domain
+// Editor und alle Änderungen nur nach Login, egal ob über localhost, LAN oder eine Domain
 app.use((req, res, next) => {
   if (isPublic(req)) return next();
   if (auth.user(req)) {
@@ -100,7 +93,7 @@ app.get('/editor', (_req, res) => res.redirect('/editor.html'));
 
 // Login für den Editor
 app.get('/api/me', (req, res) => {
-  res.set('Cache-Control', 'no-store').json({ user: auth.user(req), loginEnabled: auth.enabled });
+  res.set('Cache-Control', 'no-store').json({ user: auth.user(req), loginEnabled: auth.enabled, startPage: hasStartPage() });
 });
 
 const LOGIN_ERRORS: Record<LoginError, { status: number; text: string }> = {
