@@ -1,5 +1,6 @@
 import { FONTS, renderOverlay } from './render.js';
 import { createLoader } from './loader.js';
+import { initLangSelect, locale, t, widgetName } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -242,14 +243,14 @@ function renderWidgetList() {
       if (v) placeWithoutOverlap(w);
       changed();
     });
-    toggle.setAttribute('aria-label', `${w.label} anzeigen`);
+    toggle.setAttribute('aria-label', t('show', { n: widgetName(w.label) }));
     const name = document.createElement('span');
-    name.textContent = w.label || w.type;
+    name.textContent = widgetName(w.label) || w.type;
     name.addEventListener('click', () => select(selectedId === w.id ? null : w.id));
 
     const up = document.createElement('button');
     up.textContent = '↑';
-    up.title = 'Nach oben (Liste/Ebene)';
+    up.title = t('moveUp');
     up.disabled = index === 0;
     up.addEventListener('click', () => {
       [overlay.widgets[index - 1], overlay.widgets[index]] = [overlay.widgets[index], overlay.widgets[index - 1]];
@@ -271,21 +272,21 @@ function renderWidgetList() {
       changed();
     });
     details.append(
-      field('Beschriftung', input('text', w.label, (v) => {
+      field(t('label'), input('text', w.label, (v) => {
         w.label = v;
-        name.textContent = v || w.type;
+        name.textContent = widgetName(v) || w.type;
         changed();
       }), 'full'),
-      field('Beschriftung zeigen', input('checkbox', w.showLabel, (v) => {
+      field(t('showLabel'), input('checkbox', w.showLabel, (v) => {
         w.showLabel = v;
         changed();
       })),
-      field('Eigene Farbe', customColor),
-      field(`Größe`, input('number', w.fontSize, (v) => {
+      field(t('customColor'), customColor),
+      field(t('size'), input('number', w.fontSize, (v) => {
         w.fontSize = Math.max(6, v);
         changed();
       }, { min: 6, max: 200 })),
-      field('Farbe', colorInput),
+      field(t('color'), colorInput),
       field('X', input('number', w.x, (v) => {
         w.x = v;
         changed();
@@ -304,33 +305,34 @@ function renderWidgetList() {
 // ---------- Design ----------
 
 const STYLE_FIELDS = [
-  ['width', 'Breite (px)', 'number'],
-  ['height', 'Höhe (px)', 'number'],
-  ['background', 'Hintergrund', 'color'],
-  ['backgroundOpacity', 'Deckkraft', 'range', { min: 0, max: 1, step: 0.05 }],
-  ['borderRadius', 'Ecken rund', 'number'],
-  ['borderWidth', 'Rahmen (px)', 'number'],
-  ['borderColor', 'Rahmenfarbe', 'color'],
-  ['fontFamily', 'Schrift', 'font'],
-  ['textColor', 'Textfarbe', 'color'],
-  ['labelColor', 'Beschriftungsfarbe', 'color'],
-  ['accentColor', 'Akzentfarbe', 'color'],
-  ['positiveColor', 'Farbe Sieg / Plus', 'color'],
-  ['negativeColor', 'Farbe Niederlage / Minus', 'color'],
-  ['levelIcon', 'Level-Symbol', 'select', { options: [['badge', 'Faceit-Stil (eingebaut)'], ['official', 'Original-Datei von Faceit laden']] }],
-  ['showAvatarFrame', 'Faceit-Avatar-Rahmen', 'checkbox'],
+  ['width', 'width', 'number'],
+  ['height', 'height', 'number'],
+  ['background', 'background', 'color'],
+  ['backgroundOpacity', 'opacity', 'range', { min: 0, max: 1, step: 0.05 }],
+  ['borderRadius', 'radius', 'number'],
+  ['borderWidth', 'border', 'number'],
+  ['borderColor', 'borderColor', 'color'],
+  ['fontFamily', 'font', 'font'],
+  ['textColor', 'textColor', 'color'],
+  ['labelColor', 'labelColor', 'color'],
+  ['accentColor', 'accentColor', 'color'],
+  ['positiveColor', 'positiveColor', 'color'],
+  ['negativeColor', 'negativeColor', 'color'],
+  ['levelIcon', 'levelIcon', 'select', { options: [['badge', 'levelBadge'], ['official', 'levelOfficial']] }],
+  ['showAvatarFrame', 'showFrame', 'checkbox'],
 ];
 
 function renderStyleForm() {
   const form = $('styleForm');
   form.replaceChildren();
-  for (const [key, label, type, attrs] of STYLE_FIELDS) {
+  for (const [key, labelKey, type, attrs] of STYLE_FIELDS) {
+    const label = t(labelKey);
     const set = (v) => {
       overlay.style[key] = v;
       changed();
     };
     if (type === 'font' || type === 'select') {
-      const options = type === 'font' ? FONTS.map((f) => [f, f]) : attrs.options;
+      const options = type === 'font' ? FONTS.map((f) => [f, f]) : attrs.options.map(([value, key]) => [value, t(key)]);
       const select = document.createElement('select');
       for (const [value, text] of options) select.add(new Option(text, value, false, value === overlay.style[key]));
       select.addEventListener('change', () => set(select.value));
@@ -378,26 +380,26 @@ function renderStatus() {
     status.textContent = state.error;
   } else if (state?.demo) {
     status.className = 'status demo';
-    status.textContent = 'Demo-Modus (kein API-Key)';
+    status.textContent = t('demo');
   } else {
     status.className = 'status live';
-    status.textContent = state?.player ? `Live: ${state.player.nickname}` : 'Verbinde…';
+    status.textContent = state?.player ? t('live', { n: state.player.nickname }) : t('connecting');
   }
   if (document.activeElement !== $('nickname')) $('nickname').value = state?.nickname ?? '';
   if (document.activeElement !== $('frameUrl')) $('frameUrl').value = state?.avatarFrameOverride ?? '';
   $('frameInfo').textContent = state?.avatarFrameOverride
-    ? 'Eigener Rahmen aktiv.'
+    ? t('frameCustom')
     : state?.player?.avatarFrame
-      ? 'Rahmen von Faceit gefunden.'
-      : 'Kein Rahmen von Faceit gefunden. Du kannst hier die Bild-Adresse eines Rahmens eintragen.';
+      ? t('frameFound')
+      : t('frameNone');
   if (document.activeElement !== $('seasonStart')) $('seasonStart').value = state?.seasonStart ?? '';
   const season = state?.season;
   $('seasonInfo').textContent = season
-    ? `Season: ${season.wins}W / ${season.losses}L in ${season.matches} Matches (${season.winRate}%)`
-    : state?.seasonStart ? '' : 'Ohne Datum zeigt „Season WR“ nur einen Strich.';
+    ? t('season', { w: season.wins, l: season.losses, m: season.matches, r: season.winRate })
+    : state?.seasonStart ? '' : t('seasonNone');
   const s = state?.session;
   $('sessionInfo').textContent = s
-    ? `Session seit ${new Date(s.startedAt).toLocaleString('de-DE')}: ${s.wins}W / ${s.losses}L, Elo ${s.eloChange >= 0 ? '+' : ''}${s.eloChange}`
+    ? t('session', { t: new Date(s.startedAt).toLocaleString(locale()), w: s.wins, l: s.losses, e: `${s.eloChange >= 0 ? '+' : ''}${s.eloChange}` })
     : '';
 }
 
@@ -426,20 +428,20 @@ async function init() {
   });
   $('newOverlay').addEventListener('click', async () => {
     await busy(async () => {
-      const created = await api('POST', '/api/overlays', { name: 'Neues Overlay' });
+      const created = await api('POST', '/api/overlays', { name: t('newOverlay') });
       overlays.push(created);
       await openOverlay(created.id);
     });
   });
   $('copyOverlay').addEventListener('click', async () => {
     await busy(async () => {
-      const created = await api('POST', '/api/overlays', { name: `${overlay.name} (Kopie)`, copyFrom: overlay.id });
+      const created = await api('POST', '/api/overlays', { name: t('copyName', { n: overlay.name }), copyFrom: overlay.id });
       overlays.push(created);
       await openOverlay(created.id);
     });
   });
   $('resetOverlay').addEventListener('click', async () => {
-    if (!confirm(`Overlay "${overlay.name}" auf die Standard-Positionen und das Standard-Design zurücksetzen?`)) return;
+    if (!confirm(t('confirmReset', { n: overlay.name }))) return;
     clearTimeout(saveTimer);
     await busy(async () => {
       await api('POST', `/api/overlays/${overlay.id}/reset`);
@@ -447,7 +449,7 @@ async function init() {
     });
   });
   $('deleteOverlay').addEventListener('click', async () => {
-    if (!confirm(`Overlay "${overlay.name}" wirklich löschen?`)) return;
+    if (!confirm(t('confirmDelete', { n: overlay.name }))) return;
     try {
       await busy(async () => {
         await api('DELETE', `/api/overlays/${overlay.id}`);
@@ -492,8 +494,8 @@ async function init() {
   });
   $('copyUrl').addEventListener('click', async () => {
     await navigator.clipboard?.writeText($('obsUrl').value);
-    $('copyUrl').textContent = 'Kopiert!';
-    setTimeout(() => ($('copyUrl').textContent = 'Kopieren'), 1500);
+    $('copyUrl').textContent = t('copied');
+    setTimeout(() => ($('copyUrl').textContent = t('copy')), 1500);
   });
 
   window.addEventListener('resize', drawPreview);
@@ -506,17 +508,24 @@ async function init() {
   });
 }
 
-// Über die Website-Domain: angemeldeten Nutzer zeigen und Abmelden anbieten
+// Angemeldeten Nutzer zeigen und Abmelden anbieten
 async function initAccount() {
-  const me = await fetch('/api/me').then((r) => r.json()).catch(() => null);
-  if (!me?.site || !me.user) return;
-  $('accountName').textContent = me.user;
-  $('account').hidden = false;
   $('logout').addEventListener('click', async () => {
     await fetch('/api/logout', { method: 'POST' });
     location.href = '/login.html';
   });
+  const me = await fetch('/api/me').then((r) => r.json()).catch(() => null);
+  if (me?.user) $('accountName').textContent = me.user;
 }
+
+// Sprache: feste Texte übersetzt i18n.js, die selbst gebauten Teile werden neu gezeichnet
+initLangSelect($('langSel'));
+document.addEventListener('fw:lang', () => {
+  if (!overlay) return;
+  renderStatus();
+  renderWidgetList();
+  renderStyleForm();
+});
 
 init();
 initAccount();
