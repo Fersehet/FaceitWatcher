@@ -2,7 +2,7 @@ import express, { type Response } from 'express';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AssetCache, isFaceitUrl } from './assets.ts';
-import { config, isDemo } from './config.ts';
+import { config, demoReason, isDemo } from './config.ts';
 import { FaceitClient } from './faceit/client.ts';
 import { DemoSource } from './faceit/demo.ts';
 import { createDefaultOverlay, upgradeOverlay, WIDGET_LABELS } from './overlays/defaults.ts';
@@ -153,6 +153,7 @@ app.delete('/api/overlays/:id', (req, res) => {
 
 app.listen(config.port, config.host, () => {
   console.log(`FaceitWatcher läuft: http://localhost:${config.port}`);
-  if (isDemo) console.log('Demo-Modus aktiv (kein FACEIT_API_KEY in .env). Es werden Beispieldaten angezeigt.');
+  if (isDemo) console.log(`Demo-Modus aktiv, es werden Beispieldaten angezeigt. Grund: ${demoReason()}`);
+  else console.log(`Faceit API-Key geladen (endet auf ...${config.faceitApiKey.slice(-4)}).`);
   tracker.start();
 });
