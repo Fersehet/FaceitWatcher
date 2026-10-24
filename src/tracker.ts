@@ -3,6 +3,8 @@ import type { MatchResult, PlayerSnapshot, StatsSource } from './faceit/types.ts
 import type { Storage } from './storage/storage.ts';
 
 export interface Session {
+  /** Gehört die Session zu einem anderen Spieler (z. B. Demo → echter Account), wird neu gestartet. */
+  playerId?: string;
   startedAt: string;
   startElo: number;
   startMatches: number;
@@ -150,7 +152,7 @@ export class Tracker extends EventEmitter {
     let session = this.loadSession();
     const expired = session && Date.now() - Date.parse(session.startedAt) > SESSION_MAX_AGE_MS;
     // Weniger Matches als beim Start (z. B. Demo-Neustart oder anderer Spieler) = neue Session
-    if (!session || expired || player.matches < session.startMatches) {
+    if (!session || expired || session.playerId !== player.playerId || player.matches < session.startMatches) {
       session = this.newSession(player);
       this.saveSession(session);
     }
@@ -244,6 +246,7 @@ export class Tracker extends EventEmitter {
 
   private newSession(player: PlayerSnapshot): Session {
     return {
+      playerId: player.playerId,
       startedAt: new Date().toISOString(),
       startElo: player.elo,
       startMatches: player.matches,
