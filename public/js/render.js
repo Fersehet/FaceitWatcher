@@ -183,12 +183,14 @@ function widgetContent(widget, style, state) {
         const color = m.result === 'W' ? style.positiveColor : style.negativeColor;
         // Nur die Zahl ohne Vorzeichen, Sieg/Niederlage zeigt die Farbe. Ohne bekannte Elo-Änderung ein Strich.
         const text = m.eloChange == null ? '–' : String(Math.abs(m.eloChange));
+        // Geschätzte Werte etwas blasser, bis die echte Zahl im Editor nachgetragen ist
+        const textColor = m.estimated ? hexToRgba(color, 0.55) : color;
         row.appendChild(
           el(
             'div',
             {
               width: `${w}px`, height: `${h}px`, borderRadius: '4px', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: `${size * 0.95}px`, lineHeight: 1,
-              background: hexToRgba(color, 0.25), color,
+              background: hexToRgba(color, 0.25), color: textColor,
             },
             text,
           ),
