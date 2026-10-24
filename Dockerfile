@@ -7,7 +7,6 @@ RUN npm ci --omit=dev
 
 COPY src ./src
 COPY public ./public
-COPY website ./website
 
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
