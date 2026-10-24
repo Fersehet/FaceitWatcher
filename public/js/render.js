@@ -30,9 +30,6 @@ export function loadFont(family) {
   document.head.appendChild(link);
 }
 
-const SVG_NS = 'http://www.w3.org/2000/svg';
-let knockoutId = 0;
-
 function el(tag, styles = {}, text) {
   const node = document.createElement(tag);
   Object.assign(node.style, styles);
@@ -174,21 +171,21 @@ function widgetContent(widget, style, state) {
       // Ältere Server liefern noch keine recentMatches: dann nur W/L ohne Elo
       const recent = state?.recentMatches?.length ? state.recentMatches : p.recentResults.map((result) => ({ result, eloChange: null }));
       const row = el('div', { display: 'flex', gap: `${size * 0.25}px` });
-      const [w, h] = [size * 2.2, size * 1.4];
+      // Im Standard-Layout (x 240, Schrift 14) enden die fünf Kästen genau mit dem Elo-Balken bei x 400
+      const [w, h] = [size * 2.086, size * 1.4];
       for (const m of recent) {
         const color = m.result === 'W' ? style.positiveColor : style.negativeColor;
         const text = m.eloChange == null ? m.result : `${m.eloChange > 0 ? '+' : ''}${m.eloChange}`;
-        // Farbiger Kasten, die Zahl ist ausgestanzt: dort scheint der Hintergrund durch
-        const id = `fw-knockout-${++knockoutId}`;
-        const svg = document.createElementNS(SVG_NS, 'svg');
-        svg.setAttribute('width', w);
-        svg.setAttribute('height', h);
-        svg.style.display = 'block';
-        svg.innerHTML = `<mask id="${id}"><rect width="100%" height="100%" fill="#fff"/>`
-          + `<text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" font-weight="700" font-size="${size}" fill="#000"></text></mask>`
-          + `<rect width="100%" height="100%" rx="4" fill="${color}" mask="url(#${id})"/>`;
-        svg.querySelector('text').textContent = text;
-        row.appendChild(svg);
+        row.appendChild(
+          el(
+            'div',
+            {
+              width: `${w}px`, height: `${h}px`, borderRadius: '4px', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: `${size * 0.95}px`,
+              background: hexToRgba(color, 0.25), color,
+            },
+            text,
+          ),
+        );
       }
       return row;
     }
