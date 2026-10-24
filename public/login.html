@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Login · FaceitWatcher</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/css/editor.css" />
+    <!-- Ersatz-Login, falls die Website (eigenes Repo, mit eigener login.html) nicht installiert ist -->
+    <style>
+      body { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+      .login { width: min(380px, 100%); display: grid; gap: 12px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+      .login .top { display: flex; justify-content: space-between; align-items: center; }
+      .login h1 { margin: 4px 0 0; font-size: 22px; }
+      .login label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+      .login button[type='submit'] { background: var(--accent); border-color: var(--accent); color: #170800; font-weight: 700; padding: 10px; }
+      .msg { min-height: 1.4em; margin: 0; color: var(--danger); font-size: 13px; }
+      .msg.info { color: var(--muted); }
+    </style>
+  </head>
+  <body>
+    <form class="login" id="loginForm" novalidate>
+      <div class="top">
+        <div class="brand"><img src="/logo.svg" alt="" width="28" height="28" /><b>Faceit<span>Watcher</span></b></div>
+        <select id="langSel" class="lang" aria-label="Sprache" data-i18n-aria-label="langLabel"></select>
+      </div>
+      <h1 data-i18n="loginH">Anmelden</h1>
+      <label><span data-i18n="loginUser">Benutzername</span><input id="user" autocomplete="username" autofocus /></label>
+      <label><span data-i18n="loginPass">Passwort</span><input id="password" type="password" autocomplete="current-password" /></label>
+      <button type="submit" id="submit" data-i18n="loginBtn">Anmelden</button>
+      <p class="msg" id="msg" role="alert"></p>
+    </form>
+    <script type="module">
+      import { initLangSelect, t } from '/js/i18n.js';
+
+      const $ = (id) => document.getElementById(id);
+      let lastKey = null;
+      const show = (key, info) => {
+        lastKey = key;
+        $('msg').textContent = key ? t(key) : '';
+        $('msg').className = info ? 'msg info' : 'msg';
+      };
+      initLangSelect($('langSel'));
+      document.addEventListener('fw:lang', () => lastKey && ($('msg').textContent = t(lastKey)));
+
+      // Nur Pfade auf diesem Server als Ziel zulassen
+      let next = new URLSearchParams(location.search).get('next') || '';
+      if (!/^\/(?![\/\\])/.test(next)) next = '/editor.html';
+
+      const me = await fetch('/api/me').then((r) => r.json()).catch(() => null);
+      if (me?.user) location.replace(next);
+      else if (me && !me.loginEnabled) show('loginDisabled', true);
+
+      $('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const user = $('user').value.trim();
+        const password = $('password').value;
+        if (!user || !password) return show('loginMissing');
+        $('submit').disabled = true;
+        show(null);
+        try {
+          const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user, password }) });
+          if (r.ok) return location.replace(next);
+          show(r.status === 429 ? 'loginLocked' : r.status === 503 ? 'loginDisabled' : 'loginWrong');
+          $('password').value = '';
+        } catch {
+          show('loginNoServer');
+        } finally {
+          $('submit').disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
