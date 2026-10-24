@@ -22,6 +22,7 @@ const LABELS: Record<WidgetType, string> = {
 
 type Layout = Partial<Pick<Widget, 'x' | 'y' | 'fontSize' | 'enabled' | 'showLabel'>>;
 
+// Die fünf Stats unten verteilen sich gleichmäßig über die Breite des Fortschrittsbalkens (x 16 bis 400)
 const LAYOUT: Record<WidgetType, Layout> = {
   avatar: { x: 16, y: 16, fontSize: 56, enabled: true, showLabel: false },
   nickname: { x: 88, y: 18, fontSize: 22, enabled: true, showLabel: false },
@@ -30,12 +31,12 @@ const LAYOUT: Record<WidgetType, Layout> = {
   eloProgress: { x: 16, y: 88, fontSize: 12, enabled: true, showLabel: false },
   eloToday: { x: 240, y: 18, fontSize: 18, enabled: true, showLabel: true },
   sessionRecord: { x: 320, y: 32, fontSize: 18, enabled: true, showLabel: false },
-  matches: { x: 16, y: 120, fontSize: 16, enabled: false, showLabel: true },
+  matches: { x: 353, y: 120, fontSize: 16, enabled: true, showLabel: true },
   winRate: { x: 300, y: 120, fontSize: 16, enabled: false, showLabel: true },
   seasonWinRate: { x: 16, y: 120, fontSize: 16, enabled: true, showLabel: true },
-  kd: { x: 100, y: 120, fontSize: 16, enabled: true, showLabel: true },
-  hsPercent: { x: 170, y: 120, fontSize: 16, enabled: true, showLabel: true },
-  adr: { x: 240, y: 120, fontSize: 16, enabled: false, showLabel: true },
+  kd: { x: 120, y: 120, fontSize: 16, enabled: true, showLabel: true },
+  hsPercent: { x: 197, y: 120, fontSize: 16, enabled: true, showLabel: true },
+  adr: { x: 275, y: 120, fontSize: 16, enabled: true, showLabel: true },
   currentStreak: { x: 240, y: 120, fontSize: 16, enabled: false, showLabel: true },
   longestStreak: { x: 320, y: 120, fontSize: 16, enabled: false, showLabel: true },
   recentResults: { x: 240, y: 58, fontSize: 14, enabled: true, showLabel: false },
