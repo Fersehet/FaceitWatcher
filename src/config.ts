@@ -1,7 +1,33 @@
-try {
-  process.loadEnvFile();
-} catch {
-  // Keine .env vorhanden: Standardwerte bzw. Demo-Modus
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { parseEnv } from 'node:util';
+
+// .env im Projektordner suchen, egal aus welchem Ordner der Server gestartet wurde
+const envCandidates = [...new Set([fileURLToPath(new URL('../.env', import.meta.url)), resolve(process.cwd(), '.env')])];
+const envFile = envCandidates.find((f) => existsSync(f)) ?? null;
+if (envFile) loadEnv(envFile);
+
+/**
+ * Wie process.loadEnvFile, versteht aber auch UTF-16 und BOM (z. B. von Windows-Editoren oder PowerShell erzeugt).
+ * Bereits gesetzte Umgebungsvariablen (z. B. aus Docker) haben Vorrang.
+ */
+function loadEnv(file: string) {
+  const raw = readFileSync(file);
+  const text = (raw[0] === 0xff && raw[1] === 0xfe ? raw.toString('utf16le') : raw.toString('utf8')).replace(/^\uFEFF/, '');
+  for (const [key, value] of Object.entries(parseEnv(text))) {
+    if (process.env[key] === undefined) process.env[key] = value;
+  }
+}
+
+/** Erklärt beim Start, warum der Demo-Modus aktiv ist. */
+export function demoReason(): string {
+  if (process.env.FACEIT_API_KEY !== undefined) return 'FACEIT_API_KEY ist leer.';
+  if (envFile) return `In ${envFile} steht keine Zeile "FACEIT_API_KEY=...".`;
+  // Windows blendet Dateiendungen aus, aus ".env" wird beim Speichern leicht ".env.txt"
+  const txt = envCandidates.map((f) => `${f}.txt`).find((f) => existsSync(f));
+  if (txt) return `Gefunden wurde nur ${txt}. Bitte in ".env" umbenennen (ohne .txt).`;
+  return `Keine .env gefunden (gesucht: ${envCandidates.join(', ')}).`;
 }
 
 export const config = {
