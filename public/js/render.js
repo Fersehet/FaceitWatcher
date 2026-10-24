@@ -87,10 +87,9 @@ function widgetContent(widget, style, state) {
   switch (widget.type) {
     case 'avatar': {
       const frame = style.showAvatarFrame && p?.avatarFrame ? p.avatarFrame : '';
-      // Mit Faceit-Rahmen übernimmt der Rahmen die Umrandung. Der Rahmen ist 136 % so groß wie das Bild
-      // (wie bei Faceit), also wird das Bild verkleinert, damit das Widget in beiden Fällen gleich groß ist.
-      const inner = frame ? size / 1.36 : size;
-      const box = { width: `${inner}px`, height: `${inner}px`, borderRadius: '50%', border: frame ? 'none' : `2px solid ${style.accentColor}`, boxSizing: 'border-box' };
+      // Das Bild ist immer gleich groß. Der Ring (ohne Rahmen) bzw. der Faceit-Rahmen (136 % wie bei Faceit)
+      // liegt außen herum, ohne Platz im Layout zu belegen oder das Bild zu verkleinern.
+      const box = { width: `${size}px`, height: `${size}px`, borderRadius: '50%', boxShadow: frame ? 'none' : `0 0 0 2px ${style.accentColor}` };
       let avatar;
       if (p?.avatar) {
         avatar = el('img', { ...box, objectFit: 'cover', display: 'block' });
@@ -98,13 +97,13 @@ function widgetContent(widget, style, state) {
       } else {
         avatar = el(
           'div',
-          { ...box, background: style.accentColor, display: 'grid', placeItems: 'center', fontSize: `${inner * 0.45}px`, fontWeight: 700, color: '#fff' },
+          { ...box, background: style.accentColor, display: 'grid', placeItems: 'center', fontSize: `${size * 0.45}px`, fontWeight: 700, color: '#fff' },
           (p?.nickname ?? '?').charAt(0).toUpperCase(),
         );
       }
       if (!frame) return avatar;
-      const wrap = el('div', { position: 'relative', width: `${size}px`, height: `${size}px`, display: 'grid', placeItems: 'center' });
-      const frameImg = el('img', { position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' });
+      const wrap = el('div', { position: 'relative', width: `${size}px`, height: `${size}px` });
+      const frameImg = el('img', { position: 'absolute', left: '-18%', top: '-18%', width: '136%', height: '136%', pointerEvents: 'none' });
       frameImg.src = assetUrl(frame);
       frameImg.onerror = () => frameImg.remove();
       wrap.append(avatar, frameImg);
