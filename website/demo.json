@@ -1,0 +1,241 @@
+{
+  "note": "Fallback für die Landingpage ohne FaceitWatcher-Server: Standard-Overlay aus src/overlays/defaults.ts mit Jans Faceit-Account (Fersehet), Stand 24.10.2026. Session-Werte entstehen in der Vorschau.",
+  "overlay": {
+    "id": "demo",
+    "ownerId": "local",
+    "name": "Standard",
+    "style": {
+      "width": 420,
+      "height": 170,
+      "background": "#14161a",
+      "backgroundOpacity": 0.85,
+      "borderRadius": 12,
+      "borderColor": "#ff5500",
+      "borderWidth": 0,
+      "fontFamily": "Play",
+      "textColor": "#ffffff",
+      "labelColor": "#9aa0a6",
+      "accentColor": "#ff5500",
+      "positiveColor": "#32d74b",
+      "negativeColor": "#ff453a",
+      "levelIcon": "badge",
+      "showAvatarFrame": true
+    },
+    "widgets": [
+      {
+        "id": "avatar",
+        "type": "avatar",
+        "enabled": true,
+        "x": 16,
+        "y": 16,
+        "fontSize": 56,
+        "color": "",
+        "label": "Avatar",
+        "showLabel": false
+      },
+      {
+        "id": "nickname",
+        "type": "nickname",
+        "enabled": true,
+        "x": 88,
+        "y": 18,
+        "fontSize": 22,
+        "color": "",
+        "label": "Nickname",
+        "showLabel": false
+      },
+      {
+        "id": "level",
+        "type": "level",
+        "enabled": true,
+        "x": 88,
+        "y": 50,
+        "fontSize": 20,
+        "color": "",
+        "label": "Level",
+        "showLabel": false
+      },
+      {
+        "id": "elo",
+        "type": "elo",
+        "enabled": true,
+        "x": 124,
+        "y": 54,
+        "fontSize": 22,
+        "color": "",
+        "label": "Elo",
+        "showLabel": false
+      },
+      {
+        "id": "eloProgress",
+        "type": "eloProgress",
+        "enabled": true,
+        "x": 16,
+        "y": 88,
+        "fontSize": 12,
+        "color": "",
+        "label": "Fortschritt zum nächsten Level",
+        "showLabel": false
+      },
+      {
+        "id": "eloToday",
+        "type": "eloToday",
+        "enabled": true,
+        "x": 240,
+        "y": 18,
+        "fontSize": 18,
+        "color": "",
+        "label": "Elo heute",
+        "showLabel": true
+      },
+      {
+        "id": "sessionRecord",
+        "type": "sessionRecord",
+        "enabled": true,
+        "x": 320,
+        "y": 18,
+        "fontSize": 18,
+        "color": "",
+        "label": "Heute",
+        "showLabel": true
+      },
+      {
+        "id": "matches",
+        "type": "matches",
+        "enabled": false,
+        "x": 16,
+        "y": 120,
+        "fontSize": 16,
+        "color": "",
+        "label": "Matches",
+        "showLabel": true
+      },
+      {
+        "id": "winRate",
+        "type": "winRate",
+        "enabled": true,
+        "x": 16,
+        "y": 120,
+        "fontSize": 16,
+        "color": "",
+        "label": "Winrate",
+        "showLabel": true
+      },
+      {
+        "id": "seasonWinRate",
+        "type": "seasonWinRate",
+        "enabled": false,
+        "x": 300,
+        "y": 120,
+        "fontSize": 16,
+        "color": "",
+        "label": "Season Winrate",
+        "showLabel": true
+      },
+      {
+        "id": "kd",
+        "type": "kd",
+        "enabled": true,
+        "x": 100,
+        "y": 120,
+        "fontSize": 16,
+        "color": "",
+        "label": "K/D",
+        "showLabel": true
+      },
+      {
+        "id": "hsPercent",
+        "type": "hsPercent",
+        "enabled": true,
+        "x": 170,
+        "y": 120,
+        "fontSize": 16,
+        "color": "",
+        "label": "HS %",
+        "showLabel": true
+      },
+      {
+        "id": "adr",
+        "type": "adr",
+        "enabled": false,
+        "x": 240,
+        "y": 120,
+        "fontSize": 16,
+        "color": "",
+        "label": "ADR",
+        "showLabel": true
+      },
+      {
+        "id": "currentStreak",
+        "type": "currentStreak",
+        "enabled": false,
+        "x": 240,
+        "y": 120,
+        "fontSize": 16,
+        "color": "",
+        "label": "Siegesserie",
+        "showLabel": true
+      },
+      {
+        "id": "longestStreak",
+        "type": "longestStreak",
+        "enabled": false,
+        "x": 320,
+        "y": 120,
+        "fontSize": 16,
+        "color": "",
+        "label": "Längste Serie",
+        "showLabel": true
+      },
+      {
+        "id": "recentResults",
+        "type": "recentResults",
+        "enabled": true,
+        "x": 240,
+        "y": 58,
+        "fontSize": 14,
+        "color": "",
+        "label": "Letzte Matches",
+        "showLabel": false
+      }
+    ],
+    "updatedAt": "2026-10-24T14:30:50.267Z"
+  },
+  "state": {
+    "demo": false,
+    "player": {
+      "playerId": "0de09226-6828-4e5f-9cc2-24658ecf06c2",
+      "nickname": "Fersehet",
+      "avatar": "https://distribution.faceit-cdn.net/images/27a956c0-cb6b-4168-bc9f-506e6d80071b.jpg",
+      "avatarFrame": "",
+      "country": "sj",
+      "elo": 1408,
+      "level": 7,
+      "matches": 860,
+      "wins": 433,
+      "winRate": 50,
+      "kd": 1.07,
+      "hsPercent": 50,
+      "adr": null,
+      "currentStreak": 0,
+      "longestStreak": 9,
+      "recentResults": [
+        "W",
+        "L",
+        "W",
+        "L",
+        "L"
+      ]
+    },
+    "session": {
+      "startedAt": "",
+      "eloChange": 0,
+      "matches": 0,
+      "wins": 0,
+      "losses": 0
+    },
+    "season": null,
+    "error": null
+  },
+  "chatNames": []
+}

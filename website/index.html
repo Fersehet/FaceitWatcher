@@ -1,0 +1,1083 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FaceitWatcher Overlay</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="FaceitWatcher: Dein eigenes Faceit Elo- und Profil-Overlay für OBS. Jede Statistik einzeln schaltbar, frei gestaltbar, Verlauf lokal gespeichert.">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="stylesheet" href="fonts/fonts.css">
+<script>document.documentElement.classList.add('js');</script>
+<style>
+/* Layout: dark broadcast studio. Hero = live overlay editor on a faux game scene; below, alternating feature rows, a real 3-step OBS setup, FAQ, CTA. */
+:root {
+  color-scheme: dark;
+  --bg: #0d1017;
+  --bg-2: #131823;
+  --surface: #1a2130;
+  --line: #2a3346;
+  --fg: #e9edf5;
+  --muted: #9aa5ba;
+  --accent: #ff5500;
+  --accent-ink: #170800;
+  --glow: rgba(255, 85, 0, .45);
+  --up: #46d3b0;
+  --down: #ff6b6b;
+  --f-overlay: "Play", "Chakra Petch", system-ui, sans-serif;
+  --f-display: "Chakra Petch", "Rajdhani", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Barlow", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --gutter-l: max(16px, env(safe-area-inset-left, 0px));
+  --gutter-r: max(16px, env(safe-area-inset-right, 0px));
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation: none !important; transition: none !important; } }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 400 17px/1.6 var(--f-body); }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.wrap { max-width: 1160px; margin: 0 auto; padding-left: var(--gutter-l); padding-right: var(--gutter-r); }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 700; line-height: 1.1; text-wrap: balance; margin: 0; letter-spacing: .01em; }
+h2 { font-size: clamp(28px, 4vw, 42px); }
+h3 { font-size: 21px; font-weight: 600; }
+p { margin: 0; }
+.eyebrow { font: 600 13px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+.lead { color: var(--muted); font-size: 19px; max-width: 60ch; }
+
+/* Nav */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 9; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; font: 700 19px/1 var(--f-display); text-decoration: none; }
+.brand-mark { width: 30px; height: 30px; flex: none; }
+.nav-links { display: flex; gap: 22px; align-items: center; font-weight: 500; }
+.nav-links a { text-decoration: none; color: var(--muted); }
+.nav-links a:hover { color: var(--fg); }
+@media (max-width: 720px) { .nav-links a:not(.btn) { display: none; } }
+
+.btn { display: inline-flex; align-items: center; gap: 8px; font: 600 15px/1 var(--f-display); letter-spacing: .04em; text-transform: uppercase; text-decoration: none; padding: 13px 20px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.06); }
+.nav .btn { padding: 10px 14px; font-size: 13px; }
+
+/* Hero */
+.hero { padding-block: 64px 48px; }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 44px; }
+.hero-text { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 20px 48px; align-items: end; }
+.hero-text > :first-child { grid-column: 1 / -1; justify-self: start; }
+@media (max-width: 860px) { .hero-text { grid-template-columns: minmax(0, 1fr); } }
+.hero-text h1 { margin: 0; grid-row: span 2; }
+.hero h1 { font-size: clamp(38px, 5.6vw, 64px); margin-block: 18px 20px; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+.status { display: inline-flex; align-items: center; gap: 8px; font: 500 13px/1 var(--f-mono); color: var(--muted); border: 1px solid var(--line); padding: 7px 10px; border-radius: 999px; }
+.status i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); }
+
+/* Demo: nachgebaute Stream-Szene, darin das echte Overlay (render.js aus dem Tool) */
+.demo { background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; min-width: 0; }
+.demo-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--line); font: 500 12px/1 var(--f-mono); color: var(--muted); }
+.demo-bar .dots { display: flex; gap: 6px; }
+.demo-bar .dots span { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+.demo-bar .right { display: inline-flex; gap: 14px; align-items: center; }
+@media (max-width: 600px) { .demo-bar > span:nth-child(2) { display: none; } }
+.rec { color: var(--down); display: inline-flex; gap: 6px; align-items: center; }
+.rec::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--down); animation: blink 1.6s infinite; }
+.source { border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; }
+.source.live { color: var(--up); border-color: color-mix(in srgb, var(--up) 45%, var(--line)); }
+@keyframes blink { 50% { opacity: .25; } }
+
+.stream { position: relative; aspect-ratio: 16 / 9; overflow: hidden; container-type: inline-size; background: #07080b; font-family: var(--f-body); }
+.game { position: absolute; inset: 0 25% 0 0; overflow: hidden; }
+.world { position: absolute; inset: -3%; animation: sway 9s ease-in-out infinite alternate; }
+@keyframes sway { 0% { transform: translate(0, 0); } 35% { transform: translate(-1.2%, .4%); } 70% { transform: translate(.8%, -.3%); } 100% { transform: translate(1.4%, .5%); } }
+.sky { position: absolute; inset: 0 0 55%; background: linear-gradient(180deg, #6f8fae 0%, #b8c7cf 70%, #d9cfb4 100%); }
+.wall { position: absolute; left: 0; right: 0; top: 24%; bottom: 34%; background:
+  repeating-linear-gradient(0deg, transparent 0 11%, rgba(80, 55, 25, .28) 11% 12%),
+  repeating-linear-gradient(90deg, transparent 0 9%, rgba(80, 55, 25, .2) 9% 9.4%),
+  linear-gradient(180deg, #d8b884, #b8925c); }
+.wall.far { left: 52%; top: 32%; bottom: 36%; background: linear-gradient(180deg, #c9a874, #a5814d); filter: brightness(.85); }
+.door { position: absolute; left: 22%; width: 17%; top: 38%; bottom: 34%; background: linear-gradient(180deg, #2a2016, #120d08); border-radius: 50% 50% 0 0 / 22% 22% 0 0; box-shadow: inset 0 0 0 .5cqw #9a774a; }
+.crate { position: absolute; left: 60%; width: 14%; aspect-ratio: 1; bottom: 26%; background:
+  linear-gradient(45deg, transparent 47%, #5c4024 47% 53%, transparent 53%),
+  repeating-linear-gradient(0deg, #8a6236 0 18%, #6f4c28 18% 20%); border: .5cqw solid #5c4024; }
+.floor { position: absolute; left: 0; right: 0; bottom: 0; height: 36%; background: linear-gradient(180deg, #a98858 0%, #7b6040 60%, #4a3a27 100%); }
+.floor::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(100deg, transparent 0 14%, rgba(0, 0, 0, .06) 14% 15%); }
+.xhair { position: absolute; left: 50%; top: 50%; width: 2.2cqw; aspect-ratio: 1; transform: translate(-50%, -50%); z-index: 2;
+  background: linear-gradient(#5dff9c, #5dff9c) center/2px 100% no-repeat, linear-gradient(#5dff9c, #5dff9c) center/100% 2px no-repeat; }
+.gun { position: absolute; right: 0; bottom: -1%; width: 40%; z-index: 2; filter: drop-shadow(0 0 1cqw rgba(0, 0, 0, .4)); animation: breathe 3.2s ease-in-out infinite; }
+@keyframes breathe { 50% { transform: translateY(2%); } }
+.gun.fire { animation: recoil .18s ease-out 3; }
+@keyframes recoil { 40% { transform: translate(1.5%, 4%) rotate(-1.5deg); } }
+.hud { position: absolute; z-index: 3; color: #fff; font: 700 2cqw/1 var(--f-mono); text-shadow: 0 0 .6cqw rgba(0, 0, 0, .7); display: flex; gap: 2cqw; align-items: baseline; }
+.hud small { font-size: .55em; opacity: .7; margin-right: .4em; }
+.hud.hp { left: 50%; bottom: 3%; transform: translateX(-50%); }
+.hud.ammo { right: 3%; bottom: 3%; }
+.killfeed { position: absolute; right: 2%; top: 3%; z-index: 3; display: grid; gap: .5cqw; justify-items: end; }
+.killfeed div { font: 600 1.15cqw/1 var(--f-body); color: #fff; background: rgba(0, 0, 0, .55); padding: .5cqw .8cqw; border-radius: .3cqw; animation: rise .3s ease; }
+.killfeed .ct { color: #8fc3ff; } .killfeed .t { color: #ffd27a; }
+.killfeed .me { box-shadow: inset 0 0 0 1px #e33; }
+
+.slot { position: absolute; z-index: 4; transition: left .45s cubic-bezier(.5, 0, .2, 1), top .45s cubic-bezier(.5, 0, .2, 1); left: 2.5%; top: 4%; }
+.stream.pos-tr .slot { left: calc(97.5% - var(--sw, 0px)); }
+.stream.pos-br .slot { left: calc(97.5% - var(--sw, 0px)); top: calc(86% - var(--sh, 0px)); }
+.slot-inner { transform-origin: 0 0; }
+.stream.pos-tr .killfeed { opacity: 0; }
+
+.cam { position: absolute; left: 2.2%; bottom: 4%; width: 24%; aspect-ratio: 4 / 3; z-index: 4; border-radius: .8cqw; overflow: hidden; border: .3cqw solid var(--accent); box-shadow: 0 1cqw 3cqw rgba(0, 0, 0, .5);
+  background: radial-gradient(70% 60% at 30% 20%, #2c3550, transparent 70%), linear-gradient(180deg, #1a1f30, #0e1019); }
+.cam::before { content: ""; position: absolute; left: 0; right: 0; top: 18%; height: 3%; background: var(--accent); filter: blur(.4cqw); opacity: .7; }
+.cam svg { position: absolute; left: 50%; bottom: -4%; width: 78%; transform: translateX(-50%); animation: bob 4s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateX(-50%) translateY(2%) rotate(-1deg); } }
+.cam .tag { position: absolute; left: 4%; bottom: 5%; font: 700 1.1cqw/1 var(--f-display); color: #fff; background: rgba(0, 0, 0, .55); padding: .4cqw .7cqw; border-radius: .3cqw; letter-spacing: .05em; }
+.cam .tag i { display: inline-block; width: .7cqw; height: .7cqw; border-radius: 50%; background: #e33; margin-right: .5cqw; animation: blink 1.6s infinite; }
+
+.chat { position: absolute; top: 0; right: 0; bottom: 0; width: 25%; z-index: 4; background: #101218; border-left: 1px solid #22262f; display: flex; flex-direction: column; }
+.chat-head { padding: 1.2cqw 1.4cqw; font: 700 1.1cqw/1 var(--f-mono); letter-spacing: .12em; color: #8a93a6; border-bottom: 1px solid #22262f; display: flex; justify-content: space-between; }
+.chat-head b { color: #e33; font-weight: 700; }
+.chat-list { flex: 1; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; gap: .7cqw; padding: 1.2cqw 1.4cqw; font: 500 1.3cqw/1.35 var(--f-body); color: #d5dae4; }
+.chat-list p { margin: 0; animation: rise .3s ease; overflow-wrap: anywhere; }
+.chat-list b { font-weight: 700; }
+.chat-list .hl { background: color-mix(in srgb, var(--accent) 18%, transparent); border-left: .3cqw solid var(--accent); padding: .4cqw .6cqw; border-radius: .3cqw; }
+.chat-input { margin: 1cqw 1.2cqw 1.2cqw; padding: 1cqw; border-radius: .5cqw; background: #1a1d25; color: #6d7586; font: 500 1.2cqw/1 var(--f-body); }
+
+.alert { position: absolute; left: 37.5%; top: 6%; z-index: 5; transform: translate(-50%, -150%); opacity: 0; transition: transform .5s cubic-bezier(.3, 1.4, .5, 1), opacity .3s;
+  background: rgba(12, 14, 20, .9); border: 1px solid var(--accent); border-radius: .8cqw; padding: 1cqw 1.8cqw; text-align: center; color: #fff; font: 600 1.4cqw/1.3 var(--f-display); box-shadow: 0 0 3cqw var(--glow); }
+.alert small { display: block; font: 600 1cqw/1 var(--f-mono); color: var(--accent); letter-spacing: .14em; margin-bottom: .4cqw; }
+.alert.on { transform: translate(-50%, 0); opacity: 1; }
+
+.stream.alpha { background: repeating-conic-gradient(#2b3140 0 25%, #222836 0 50%) 0 0 / 22px 22px; }
+.stream.alpha .world, .stream.alpha .cam, .stream.alpha .chat, .stream.alpha .hud, .stream.alpha .killfeed, .stream.alpha .alert, .stream.alpha .xhair, .stream.alpha .gun { visibility: hidden; }
+.stream.alpha .game { right: 0; }
+.scene-label { position: absolute; left: 50%; transform: translateX(-50%); bottom: 1.5%; font: 500 11px/1 var(--f-mono); color: #ffffffb0; background: #00000066; padding: 5px 7px; border-radius: 4px; z-index: 6; white-space: nowrap; }
+.stream:not(.alpha) .scene-label { display: none; }
+
+/* Controls */
+.controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px 24px; padding: 18px; border-top: 1px solid var(--line); }
+@media (max-width: 560px) { .controls { grid-template-columns: minmax(0, 1fr); } }
+.ctl-title { font: 600 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 500 13px/1 var(--f-body); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.chip[aria-pressed="true"] { color: var(--fg); border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.chip[aria-pressed="true"]::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+.sw { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; background: var(--c); box-shadow: inset 0 0 0 2px var(--bg-2); }
+.sw[aria-pressed="true"] { border-color: var(--fg); }
+.demo-note { font-size: 13px; color: var(--muted); padding: 0 18px 16px; }
+
+/* Sections */
+section { padding-block: 72px; scroll-margin-top: 60px; }
+.sec-head { display: grid; gap: 14px; margin-bottom: 40px; max-width: 720px; }
+.band { background: var(--bg-2); border-block: 1px solid var(--line); }
+
+.features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+@media (max-width: 900px) { .features { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .features { grid-template-columns: minmax(0, 1fr); } }
+.feat { background: var(--bg); padding: 28px 26px; display: flex; flex-direction: column; gap: 10px; }
+.feat p { color: var(--muted); }
+.feat .tag { font: 500 12px/1 var(--f-mono); color: var(--accent); }
+
+/* Stats */
+.stats-grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 32px; align-items: start; }
+@media (max-width: 900px) { .stats-grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 22px; min-width: 0; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.panel-head b { font: 700 28px/1 var(--f-mono); }
+.panel-head > span, .panel-head > div > span { font: 500 12px/1 var(--f-mono); color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+.chart { width: 100%; height: auto; display: block; }
+.chart text { fill: var(--muted); font: 500 11px var(--f-mono); }
+.session { display: grid; gap: 1px; background: var(--line); border-radius: 10px; overflow: hidden; border: 1px solid var(--line); }
+.session div { background: var(--surface); padding: 14px 18px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.session dt { color: var(--muted); }
+.session b { font: 700 20px/1 var(--f-mono); font-variant-numeric: tabular-nums; }
+.example { font: 500 12px/1.4 var(--f-mono); color: var(--muted); margin-top: 12px; }
+
+.levels { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px; margin-top: 28px; }
+@media (max-width: 600px) { .levels { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.levels div { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 10px 6px; text-align: center; }
+.levels b { display: block; font: 700 18px/1 var(--f-mono); color: var(--lc); }
+.levels span { font: 500 11px/1.3 var(--f-mono); color: var(--muted); }
+
+/* Steps */
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; counter-reset: s; }
+@media (max-width: 860px) { .steps { grid-template-columns: minmax(0, 1fr); } }
+.step { counter-increment: s; border-top: 2px solid var(--accent); padding-top: 18px; display: grid; gap: 10px; align-content: start; }
+.step::before { content: "Schritt " counter(s); font: 600 12px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+.step p { color: var(--muted); }
+code, .url { font: 500 14px/1.5 var(--f-mono); background: var(--surface); border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px; overflow-wrap: anywhere; }
+.copyrow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.copybtn { font: 600 12px/1 var(--f-mono); padding: 8px 10px; border-radius: 5px; border: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; }
+
+/* FAQ */
+.faq { display: grid; gap: 10px; max-width: 820px; }
+details { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 0 20px; }
+summary { cursor: pointer; padding-block: 18px; font: 600 18px/1.3 var(--f-display); list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; font-family: var(--f-mono); color: var(--accent); }
+details[open] summary::after { content: "–"; }
+details p { color: var(--muted); padding-bottom: 18px; max-width: 65ch; }
+
+/* CTA */
+.cta { text-align: left; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 36px; }
+@media (max-width: 720px) { .cta { grid-template-columns: minmax(0, 1fr); padding: 26px; } }
+.cta p { color: var(--muted); margin-top: 10px; }
+footer { border-top: 1px solid var(--line); padding-block: 28px; color: var(--muted); font-size: 14px; }
+footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+/* Ladebildschirm: Logo baut sich auf und pulsiert, danach verschwimmt er in die Seite */
+.intro { display: none; }
+.js .intro { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: radial-gradient(60% 50% at 50% 50%, #1a1208 0%, var(--bg) 70%); transition: opacity .6s ease, filter .6s ease, visibility 0s .6s; }
+.js .intro.done { opacity: 0; filter: blur(14px); visibility: hidden; pointer-events: none; }
+.intro-inner { display: grid; justify-items: center; gap: 18px; transition: transform .6s cubic-bezier(.5, 0, .2, 1); }
+.intro.done .intro-inner { transform: scale(1.35); }
+.intro-logo { overflow: visible; filter: drop-shadow(0 0 18px var(--glow)); animation: fw-pulse 1.1s ease-in-out .9s infinite; }
+.i-ring { stroke-dasharray: 100; stroke-dashoffset: 100; transform: rotate(-90deg); transform-origin: 32px 32px; animation: draw .7s cubic-bezier(.6, 0, .2, 1) .1s forwards; }
+.i-cross { opacity: 0; transform: scale(.4); transform-origin: 32px 32px; animation: pop .45s cubic-bezier(.3, 1.6, .5, 1) .45s forwards; }
+.i-core { opacity: 0; animation: fade .4s ease .3s forwards; }
+.i-arrow { stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw .45s ease-out .65s forwards; }
+.i-head { opacity: 0; transform: translate(-6px, 6px); animation: shoot .3s ease-out 1s forwards; }
+.intro-word { font: 700 22px/1 var(--f-display); letter-spacing: .32em; color: var(--fg); padding-left: .32em; opacity: 0; animation: rise .5s ease .75s forwards; }
+.intro-word span { color: var(--accent); }
+.intro-bar { width: 160px; height: 2px; background: var(--line); border-radius: 2px; overflow: hidden; opacity: 0; animation: fade .3s ease .8s forwards; }
+.intro-bar i { display: block; height: 100%; width: 100%; background: var(--accent); box-shadow: 0 0 10px var(--glow); transform-origin: left; transform: scaleX(var(--p, .1)); transition: transform .35s ease; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes pop { to { opacity: 1; transform: none; } }
+@keyframes fade { to { opacity: 1; } }
+@keyframes shoot { to { opacity: 1; transform: none; } }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes fw-pulse { 0%, 100% { transform: scale(.94); } 50% { transform: scale(1.04); } }
+
+/* Kleiner Loader in der Vorschau, wenn sich das Overlay ändert */
+.fw-loader { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); background: rgba(12, 12, 12, .25); opacity: 0; visibility: hidden; transition: opacity .2s, visibility 0s .2s; pointer-events: none; }
+.fw-loader.on { opacity: 1; visibility: visible; transition: opacity .2s; }
+.fw-loader img { width: clamp(28px, 22%, 72px); animation: fw-pulse 1.1s ease-in-out infinite; filter: drop-shadow(0 0 12px var(--glow)); }
+
+/* Scroll-Fortschritt und Navigation */
+.progress { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 20; background: var(--accent); box-shadow: 0 0 10px var(--glow); transform-origin: left; transform: scaleX(0); }
+.nav { transition: box-shadow .3s, background .3s; }
+.nav.scrolled { box-shadow: 0 10px 30px rgba(0, 0, 0, .35); }
+.brand-mark { transition: transform .5s cubic-bezier(.3, 1.4, .5, 1); }
+.brand:hover .brand-mark { transform: rotate(90deg); }
+.nav-links a:not(.btn) { position: relative; transition: color .2s; }
+.nav-links a:not(.btn)::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: var(--accent); transform: scaleX(0); transition: transform .25s ease; }
+.nav-links a.active, .nav-links a:not(.btn):hover { color: var(--fg); }
+.nav-links a.active::after, .nav-links a:not(.btn):hover::after { transform: scaleX(1); }
+
+/* Buttons */
+.btn { position: relative; overflow: hidden; transition: transform .2s, box-shadow .2s, border-color .2s, filter .2s; }
+.btn:hover { transform: translateY(-2px); }
+.btn.primary:hover { box-shadow: 0 8px 24px var(--glow); }
+.btn.primary::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .45) 50%, transparent 70%); transform: translateX(-120%); transition: transform .6s ease; }
+.btn.primary:hover::after { transform: translateX(120%); }
+
+/* Hero-Hintergrund: Raster und langsam treibendes Leuchten */
+.hero { position: relative; overflow: hidden; }
+.hero > .wrap { position: relative; }
+.hero-bg { position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px); background-size: 48px 48px; opacity: .35;
+  -webkit-mask-image: radial-gradient(70% 70% at 60% 40%, #000 0%, transparent 75%); mask-image: radial-gradient(70% 70% at 60% 40%, #000 0%, transparent 75%); }
+.orb { position: absolute; width: 520px; height: 520px; border-radius: 50%; left: 55%; top: -10%; background: radial-gradient(circle, rgba(255, 85, 0, .28), transparent 65%); filter: blur(20px); animation: drift 14s ease-in-out infinite alternate; }
+.orb.two { width: 380px; height: 380px; left: -8%; top: 45%; background: radial-gradient(circle, rgba(255, 85, 0, .14), transparent 65%); animation-duration: 18s; animation-direction: alternate-reverse; }
+@keyframes drift { from { transform: translate(0, 0); } to { transform: translate(-60px, 50px); } }
+.hero h1 em { background: linear-gradient(90deg, var(--accent), #ff9a5c, var(--accent)); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shine 6s linear infinite; }
+@keyframes shine { to { background-position: -200% 0; } }
+.status i { animation: ping 2s ease-out infinite; }
+@keyframes ping { 0% { box-shadow: 0 0 0 0 var(--glow); } 100% { box-shadow: 0 0 0 10px transparent; } }
+
+/* Einstieg Hero (nach dem Ladebildschirm) und Einblenden beim Scrollen */
+.js [data-hero], .js [data-reveal] { opacity: 0; transform: translateY(26px); transition: opacity .7s ease, transform .7s cubic-bezier(.2, .7, .2, 1); transition-delay: calc(var(--d, 0) * 110ms); }
+.js .demo[data-hero] { transform: translateY(30px) scale(.97); }
+.js .ready [data-hero], .js [data-reveal].in { opacity: 1; transform: none; }
+.js .step[data-reveal] { transform: none; }
+.step { position: relative; border-top-color: var(--line); }
+.step::after { content: ""; position: absolute; top: -2px; left: 0; right: 0; height: 2px; background: var(--accent); box-shadow: 0 0 10px var(--glow); transform-origin: left; transform: scaleX(1); }
+.js .step[data-reveal]::after { transform: scaleX(0); transition: transform .9s cubic-bezier(.6, 0, .2, 1); transition-delay: calc(var(--d, 0) * 160ms + .2s); }
+.js .step[data-reveal].in::after { transform: scaleX(1); }
+.levels div { transition: transform .5s cubic-bezier(.3, 1.4, .5, 1), opacity .5s, border-color .2s; }
+.js .levels[data-reveal] { transform: none; opacity: 1; }
+.js .levels[data-reveal] div { opacity: 0; transform: translateY(14px) scale(.9); transition-delay: calc(var(--i) * 45ms); }
+.js .levels[data-reveal].in div { opacity: 1; transform: none; }
+.levels div:hover { border-color: var(--lc); transform: translateY(-3px); transition-delay: 0s; }
+
+/* Karten: Lichtschein folgt der Maus */
+.feat { position: relative; transition: background .3s; }
+/* Ein Lichtkegel für alle Boxen: leuchtet über die Trennlinien in die Nachbarboxen hinein */
+.features { position: relative; }
+.features::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .35s; background: radial-gradient(340px circle at var(--gx, 50%) var(--gy, 50%), var(--accent), transparent 70%); }
+.features:hover::before { opacity: 1; }
+.feat { z-index: 1; }
+.feat::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .35s; background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 85, 0, .17), transparent 65%); }
+.features:hover .feat::before { opacity: 1; }
+.feat .tag { transition: letter-spacing .3s; }
+.feat:hover .tag { letter-spacing: .08em; }
+.panel, details, .cta { transition: border-color .3s, opacity .7s ease, transform .7s cubic-bezier(.2, .7, .2, 1); }
+.panel:hover, details:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+details[open] p { animation: rise .35s ease; }
+.cta { position: relative; overflow: hidden; }
+.cta::before { content: ""; position: absolute; width: 420px; height: 420px; right: -120px; top: -160px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 85, 0, .22), transparent 65%); animation: drift 12s ease-in-out infinite alternate; pointer-events: none; }
+.cta > * { position: relative; }
+
+/* Diagramm zeichnet sich beim Scrollen */
+.js .chart #line { stroke-dasharray: var(--len); stroke-dashoffset: var(--len); transition: stroke-dashoffset 1.6s cubic-bezier(.6, 0, .2, 1); }
+.js .chart #area { opacity: 0; transition: opacity 1s ease .9s; }
+.js .chart circle { opacity: 0; transform-box: fill-box; transform-origin: center; transform: scale(0); transition: opacity .3s, transform .4s cubic-bezier(.3, 1.6, .5, 1); transition-delay: calc(var(--i) * 70ms + .2s); }
+.chart.in #line { stroke-dashoffset: 0; }
+.chart.in #area { opacity: 1; }
+.chart.in circle { opacity: 1; transform: none; }
+
+.demo { transition: opacity .7s ease, transform .7s cubic-bezier(.2, .7, .2, 1), box-shadow .4s; }
+.demo:hover { box-shadow: 0 20px 60px rgba(0, 0, 0, .45), 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .js [data-hero], .js [data-reveal], .js .levels[data-reveal] div { opacity: 1; transform: none; }
+  .js .chart #line { stroke-dasharray: none; }
+  .js .chart #area, .js .chart circle { opacity: 1; transform: none; }
+  .i-ring, .i-arrow { stroke-dashoffset: 0; }
+  .i-cross, .i-core, .i-head, .intro-word, .intro-bar { opacity: 1; transform: none; }
+}
+
+/* Kategorien-Leiste rechts: Punkte je Abschnitt, Linie füllt sich beim Scrollen */
+.rail { position: fixed; right: max(18px, env(safe-area-inset-right, 0px)); top: 50%; z-index: 8; display: grid; gap: 22px; transform: translate(30px, -50%); opacity: 0; transition: opacity .5s ease .2s, transform .5s ease .2s; }
+.ready .rail { opacity: 1; transform: translate(0, -50%); }
+.rail-track { position: absolute; right: 5px; top: 9px; bottom: 9px; width: 2px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.rail-track i { position: absolute; inset: 0; background: var(--accent); box-shadow: 0 0 8px var(--glow); transform-origin: top; transform: scaleY(var(--fill, 0)); }
+.rail a { position: relative; display: flex; align-items: center; justify-content: flex-end; gap: 12px; height: 18px; text-decoration: none; color: var(--muted); font: 600 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; }
+.rail a::after { content: ""; width: 12px; height: 12px; flex: none; border-radius: 50%; background: var(--bg); border: 2px solid var(--line); box-sizing: border-box; transition: transform .3s cubic-bezier(.3, 1.6, .5, 1), background .3s, border-color .3s, box-shadow .3s; }
+.rail a.passed::after { border-color: var(--accent); }
+.rail a.active::after { background: var(--accent); border-color: var(--accent); transform: scale(1.35); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent), 0 0 14px var(--glow); }
+.rail span { padding: 5px 8px; border-radius: 5px; background: color-mix(in srgb, var(--bg) 85%, transparent); border: 1px solid var(--line); backdrop-filter: blur(6px); opacity: 0; transform: translateX(8px); transition: opacity .25s, transform .25s, color .25s; pointer-events: none; white-space: nowrap; }
+.rail span b { color: var(--accent); margin-right: 6px; font-weight: 700; }
+.rail a:hover span, .rail a:focus-visible span, .rail a.active span { opacity: 1; transform: none; }
+.rail a.active span { color: var(--fg); }
+.rail:hover a span { opacity: 1; transform: none; }
+@media (max-width: 1100px) { .rail { display: none; } }
+
+/* Handy: Kategorien als wischbare Leiste unter der Navigation */
+.mnav { display: none; }
+@media (max-width: 720px) {
+  .nav .wrap { padding-block: 10px; }
+  .brand { font-size: 17px; }
+  .mnav { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 0 var(--gutter-r) 10px var(--gutter-l); scroll-snap-type: x proximity; scroll-padding-inline: var(--gutter-l) var(--gutter-r); -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
+  .mnav::-webkit-scrollbar { display: none; }
+  .mnav a { flex: none; scroll-snap-align: start; text-decoration: none; font: 600 13px/1 var(--f-display); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line); transition: color .2s, background .2s, border-color .2s; }
+  .mnav a.active { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+  section { scroll-margin-top: 104px; padding-block: 56px; }
+  .hero { padding-block: 36px 32px; }
+  .hero h1 { font-size: clamp(34px, 10vw, 44px); }
+  .lead { font-size: 17px; }
+  .hero .actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .hero .actions .btn { justify-content: center; }
+  .feat { padding: 22px 20px; }
+  .panel { padding: 16px; }
+  .cta { text-align: center; }
+  .cta .btn { justify-self: stretch; justify-content: center; }
+  footer .wrap { flex-direction: column; gap: 6px; }
+}
+
+/* Handy: Stream-Szene ohne Chat, damit Overlay und Cam lesbar bleiben */
+@media (max-width: 600px) {
+  .demo { margin-inline: calc(-1 * var(--gutter-l)) calc(-1 * var(--gutter-r)); border-radius: 0; border-inline: 0; }
+  .stream { aspect-ratio: 4 / 3; }
+  .stream .game { right: 0; }
+  .stream .chat, .stream .killfeed { display: none; }
+  .cam { width: 30%; }
+  .hud { font-size: 3.4cqw; }
+  .gun { width: 52%; }
+  .alert { left: 50%; font-size: 2.6cqw; }
+  .alert small { font-size: 1.8cqw; }
+  .controls { padding: 16px var(--gutter-r) 16px var(--gutter-l); }
+  .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(-1 * var(--gutter-l)) calc(-1 * var(--gutter-r)); padding-inline: var(--gutter-l) var(--gutter-r); }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { flex: none; }
+  .demo-note { padding-inline: var(--gutter-l) var(--gutter-r); }
+}
+</style>
+</head>
+<body>
+<div class="intro" id="intro" role="status" aria-label="Lädt…">
+  <div class="intro-inner">
+    <svg class="intro-logo" viewBox="0 0 64 64" width="96" height="96" aria-hidden="true">
+      <defs>
+        <mask id="intro-cut">
+          <rect width="64" height="64" fill="#fff"/>
+          <path d="M13 45L24.5 34.5L31 40L48 21" fill="none" stroke="#000" stroke-width="10.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M57 8L55 27L38 10Z" fill="#000" stroke="#000" stroke-width="6" stroke-linejoin="round"/>
+        </mask>
+      </defs>
+      <g mask="url(#intro-cut)">
+        <circle class="i-core" cx="32" cy="32" r="21" fill="#141414"/>
+        <circle class="i-ring" cx="32" cy="32" r="21" fill="none" stroke="#ff5500" stroke-width="4.5" pathLength="100"/>
+        <path class="i-cross" d="M32 1.5V24M32 40V62.5M1.5 32H24M40 32H62.5" stroke="#ff5500" stroke-width="3.5"/>
+      </g>
+      <path class="i-arrow" d="M13 45L24.5 34.5L31 40L48 21" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="square" pathLength="100"/>
+      <path class="i-head" d="M57 8L55 27L38 10Z" fill="#fff"/>
+    </svg>
+    <div class="intro-word">FACEIT<span>WATCHER</span></div>
+    <div class="intro-bar"><i></i></div>
+  </div>
+</div>
+<div class="progress" id="progress" aria-hidden="true"></div>
+<nav class="nav" aria-label="Hauptnavigation">
+  <div class="wrap">
+    <a class="brand" href="#top"><img class="brand-mark" src="logo.svg" alt="" width="30" height="30">FaceitWatcher</a>
+    <div class="nav-links">
+      <a href="#features">Funktionen</a>
+      <a href="#stats">Statistiken</a>
+      <a href="#setup">Einrichtung</a>
+      <a href="#faq">FAQ</a>
+      <a class="btn primary" href="https://github.com/fersehet/faceitwatcher" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+  <div class="mnav" id="mnav">
+    <a href="#top">Start</a>
+    <a href="#features">Funktionen</a>
+    <a href="#stats">Statistiken</a>
+    <a href="#setup">Einrichtung</a>
+    <a href="#faq">FAQ</a>
+  </div>
+</nav>
+<nav class="rail" id="rail" aria-label="Abschnitte">
+  <div class="rail-track" aria-hidden="true"><i></i></div>
+  <a href="#top"><span><b>01</b>Start</span></a>
+  <a href="#features"><span><b>02</b>Funktionen</span></a>
+  <a href="#stats"><span><b>03</b>Statistiken</span></a>
+  <a href="#setup"><span><b>04</b>Einrichtung</span></a>
+  <a href="#faq"><span><b>05</b>FAQ</span></a>
+</nav>
+
+<header class="hero" id="top">
+  <div class="hero-bg" aria-hidden="true"><span class="orb"></span><span class="orb two"></span></div>
+  <div class="wrap hero-grid">
+    <div class="hero-text">
+      <span class="status" data-hero style="--d:0"><i></i>In Entwicklung · Open Source</span>
+      <h1 data-hero style="--d:1">Dein Faceit-Elo live im Stream. <em>Genau so, wie du es willst.</em></h1>
+      <p class="lead" data-hero style="--d:2">FaceitWatcher baut dir ein Elo- und Profil-Overlay für OBS. Du entscheidest, welche Werte zu sehen sind, wo sie sitzen und wie sie aussehen. Dein Match-Verlauf wird nebenbei lokal gespeichert.</p>
+      <div class="actions" data-hero style="--d:3">
+        <a class="btn primary" href="#setup">So kommt es in OBS</a>
+        <a class="btn" href="https://github.com/fersehet/faceitwatcher" target="_blank" rel="noopener">Code auf GitHub</a>
+      </div>
+    </div>
+
+    <div class="demo" data-hero style="--d:3" aria-label="Interaktive Vorschau: Stream-Szene mit dem echten Overlay">
+      <div class="demo-bar">
+        <span class="dots"><span></span><span></span><span></span></span>
+        <span>OBS · Szene „Faceit Ranked“</span>
+        <span class="right"><span class="source" id="dataSource">Beispieldaten</span><span class="rec">LIVE</span></span>
+      </div>
+      <div class="stream pos-tl" id="scene">
+        <div class="game">
+          <div class="world" aria-hidden="true">
+            <div class="sky"></div><div class="wall"></div><div class="wall far"></div><div class="door"></div><div class="floor"></div><div class="crate"></div>
+          </div>
+          <span class="xhair" aria-hidden="true"></span>
+          <svg class="gun" id="gun" viewBox="0 0 300 170" aria-hidden="true">
+            <path d="M300 170 L300 118 L232 96 L150 72 L58 50 L52 60 L140 86 L150 104 L204 124 L226 170 Z" fill="#202329"/>
+            <path d="M150 72 L232 96 L238 86 L156 62 Z" fill="#3a3f48"/>
+            <path d="M30 42 L60 49 L58 56 L28 50 Z" fill="#15171b"/>
+            <path d="M84 58 L148 75 L146 92 L88 74 Z" fill="#b88a55"/>
+            <path d="M172 104 L204 116 L190 162 L160 150 Z" fill="#17191d"/>
+            <ellipse cx="250" cy="146" rx="46" ry="30" fill="#2c313a"/>
+            <ellipse cx="128" cy="90" rx="26" ry="14" fill="#2c313a" transform="rotate(18 128 90)"/>
+          </svg>
+          <div class="killfeed" id="killfeed" aria-hidden="true"></div>
+          <div class="hud hp" aria-hidden="true"><span><small>HP</small>100</span><span><small>ARMOR</small>100</span></div>
+          <div class="hud ammo" aria-hidden="true"><span id="ammo">30</span><small>/ 90</small></div>
+          <div class="slot" id="slot"><div class="slot-inner" id="overlay"></div></div>
+        </div>
+        <div class="cam" aria-hidden="true">
+          <svg viewBox="0 0 200 170">
+            <path d="M20 170 C24 120 60 104 100 104 C140 104 176 120 180 170 Z" fill="#2a2f3d"/>
+            <rect x="86" y="88" width="28" height="22" rx="8" fill="#c99a7c"/>
+            <ellipse cx="100" cy="64" rx="30" ry="36" fill="#d8a888"/>
+            <path d="M68 58 C66 26 134 26 132 58 C126 40 74 40 68 58 Z" fill="#2b1d14"/>
+            <path d="M62 64 C60 22 140 22 138 64" fill="none" stroke="#111" stroke-width="7"/>
+            <rect x="54" y="54" width="14" height="26" rx="6" fill="#111"/><rect x="132" y="54" width="14" height="26" rx="6" fill="#111"/>
+            <path d="M60 78 C64 96 80 98 90 92" fill="none" stroke="#111" stroke-width="4"/>
+            <rect x="54" y="56" width="4" height="22" fill="var(--accent)"/><rect x="142" y="56" width="4" height="22" fill="var(--accent)"/>
+          </svg>
+          <span class="tag"><i></i>CAM</span>
+        </div>
+        <div class="chat" aria-hidden="true">
+          <div class="chat-head"><span>TWITCH · <span id="chatChannel">FERSEHET</span></span> <b>● 1.204</b></div>
+          <div class="chat-list" id="chat"></div>
+          <div class="chat-input">Nachricht senden…</div>
+        </div>
+        <div class="alert" id="alert" aria-hidden="true"><small>NEUER FOLLOWER</small><span id="alertName"></span></div>
+        <span class="scene-label">Nur die Browserquelle · transparent</span>
+      </div>
+      <div class="controls">
+        <div>
+          <div class="ctl-title">Werte ein/aus</div>
+          <div class="chips" id="statChips"></div>
+        </div>
+        <div style="display:grid; gap:18px;">
+          <div>
+            <div class="ctl-title">Akzentfarbe</div>
+            <div class="swatches" id="swatches">
+              <button class="sw" type="button" style="--c:#ff5500" data-color="#ff5500" aria-label="Orange" aria-pressed="true"></button>
+              <button class="sw" type="button" style="--c:#4cc9f0" data-color="#4cc9f0" aria-label="Cyan" aria-pressed="false"></button>
+              <button class="sw" type="button" style="--c:#ff5d9e" data-color="#ff5d9e" aria-label="Pink" aria-pressed="false"></button>
+              <button class="sw" type="button" style="--c:#a3e635" data-color="#a3e635" aria-label="Limette" aria-pressed="false"></button>
+              <button class="sw" type="button" style="--c:#f3f5fa" data-color="#f3f5fa" aria-label="Weiß" aria-pressed="false"></button>
+            </div>
+          </div>
+          <div>
+            <div class="ctl-title">Position &amp; Ansicht</div>
+            <div class="chips">
+              <button class="chip" type="button" id="l-pos" aria-pressed="false">Ecke: oben links</button>
+              <button class="chip" type="button" id="l-alpha" aria-pressed="false">Nur Browserquelle</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="demo-note" id="demoNote">Das Overlay hier zeichnet derselbe Renderer wie die OBS-Browserquelle. Probier es aus.</p>
+    </div>
+  </div>
+</header>
+
+<section id="features" class="band">
+  <div class="wrap">
+    <div class="sec-head" data-reveal>
+      <span class="eyebrow">Funktionen</span>
+      <h2>Ein Overlay, das zu deinem Stream passt</h2>
+      <p class="lead">Keine fertige Vorlage, die bei jedem gleich aussieht. Du baust dein Overlay im Browser und siehst jede Änderung sofort.</p>
+    </div>
+    <div class="features">
+      <article class="feat" data-reveal style="--d:0"><span class="tag">Schalter</span><h3>Jede Statistik einzeln</h3><p>Elo, Level, K/D, Winrate, HS-Quote, letzte Matches. Jeder Wert lässt sich ein- und ausblenden. Was du nicht zeigen willst, bleibt weg.</p></article>
+      <article class="feat" data-reveal style="--d:1"><span class="tag">Editor</span><h3>Live-Vorschau im Browser</h3><p>Farben, Schriften, Abstände und Anordnung stellst du im Editor ein. Die Vorschau zeigt dir direkt, wie es in OBS aussieht.</p></article>
+      <article class="feat" data-reveal style="--d:2"><span class="tag">OBS</span><h3>Browserquelle mit transparentem Hintergrund</h3><p>Eine URL kopieren, in OBS als Browserquelle einfügen, fertig. Das Overlay liegt sauber über deinem Gameplay.</p></article>
+      <article class="feat" data-reveal style="--d:0"><span class="tag">Session</span><h3>Elo heute +25</h3><p>Zeigt, wie dein Tag läuft: Elo-Plus oder -Minus seit Streamstart, Siege und Niederlagen der Session, aktuelle Serie.</p></article>
+      <article class="feat" data-reveal style="--d:1"><span class="tag">Verlauf</span><h3>Deine Daten bleiben bei dir</h3><p>Jedes Match landet in einer lokalen Datenbank auf deinem Rechner. So siehst du deinen Elo-Verlauf über Wochen und Monate.</p></article>
+      <article class="feat" data-reveal style="--d:2"><span class="tag">Live</span><h3>Aktualisiert sich selbst</h3><p>Nach jedem Match holt FaceitWatcher die neuen Werte über die offizielle Faceit-API. Du musst im Stream nichts anfassen.</p></article>
+    </div>
+  </div>
+</section>
+
+<section id="stats">
+  <div class="wrap">
+    <div class="sec-head" data-reveal>
+      <span class="eyebrow">Statistiken</span>
+      <h2>Mehr als die Zahl im Overlay</h2>
+      <p class="lead">FaceitWatcher merkt sich jedes Match. Daraus entstehen Verlauf, Tagesbilanz und Trends, die Faceit selbst so nicht zeigt.</p>
+    </div>
+    <div class="stats-grid">
+      <div class="panel" data-reveal>
+        <div class="panel-head"><div><span>Elo-Verlauf · letzte 20 Matches</span></div><b><span data-count="1684">1.684</span> <small class="up" style="font-size:14px">+<span data-count="112">112</span></small></b></div>
+        <svg class="chart" viewBox="0 0 600 220" role="img" aria-label="Beispiel: Elo steigt über 20 Matches von 1572 auf 1684">
+          <defs><linearGradient id="fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".35"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+          <g id="grid"></g>
+          <path id="area" fill="url(#fill)"></path>
+          <path id="line" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"></path>
+          <g id="dots"></g>
+        </svg>
+        <p class="example">Beispieldaten. Die gestrichelte Linie markiert die Grenze zu Level 9 (1.751 Elo).</p>
+      </div>
+      <div class="panel" data-reveal style="--d:1">
+        <div class="panel-head"><span>Heutige Session</span><span class="up">● live</span></div>
+        <dl class="session" style="margin:0">
+          <div><dt>Elo heute</dt><b class="up">+<span data-count="25">25</span></b></div>
+          <div><dt>Matches</dt><b data-count="6">6</b></div>
+          <div><dt>Siege / Niederlagen</dt><b>4 – 2</b></div>
+          <div><dt>K/D heute</dt><b>1,31</b></div>
+          <div><dt>Beste Map</dt><b>Ancient</b></div>
+          <div><dt>Bis Level 9</dt><b><span data-count="67">67</span> Elo</b></div>
+        </dl>
+        <p class="example">Beispieldaten.</p>
+      </div>
+    </div>
+    <div class="levels" data-reveal aria-label="Faceit Level und Elo-Grenzen">
+      <div style="--lc:#b8c1d1"><b>1</b><span>100–500</span></div>
+      <div style="--lc:#46d3b0"><b>2</b><span>501–750</span></div>
+      <div style="--lc:#46d3b0"><b>3</b><span>751–900</span></div>
+      <div style="--lc:#ffd84d"><b>4</b><span>901–1050</span></div>
+      <div style="--lc:#ffd84d"><b>5</b><span>1051–1200</span></div>
+      <div style="--lc:#ffd84d"><b>6</b><span>1201–1350</span></div>
+      <div style="--lc:#ffd84d"><b>7</b><span>1351–1530</span></div>
+      <div style="--lc:#ff9a3d"><b>8</b><span>1531–1750</span></div>
+      <div style="--lc:#ff9a3d"><b>9</b><span>1751–2000</span></div>
+      <div style="--lc:#ff6b6b"><b>10</b><span>2001+</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="setup" class="band">
+  <div class="wrap">
+    <div class="sec-head" data-reveal>
+      <span class="eyebrow">Einrichtung</span>
+      <h2>In drei Schritten in OBS</h2>
+    </div>
+    <div class="steps">
+      <div class="step" data-reveal style="--d:0"><h3>Starten und verbinden</h3><p>FaceitWatcher auf deinem PC starten und den Editor unter <code>http://localhost:3000</code> öffnen. Faceit-Nickname eintragen und deinen kostenlosen API-Key von developers.faceit.com einfügen.</p></div>
+      <div class="step" data-reveal style="--d:1"><h3>Overlay gestalten</h3><p>Im Editor die gewünschten Werte einschalten, Farben und Schrift wählen und das Layout anordnen. Die Vorschau zeigt alles live.</p></div>
+      <div class="step" data-reveal style="--d:2"><h3>Als Browserquelle einfügen</h3><p>Im Editor bei „In OBS einbinden“ die URL deines Overlays kopieren und in OBS als neue Browserquelle einfügen. Sie sieht so aus:</p>
+        <div class="copyrow"><span class="url" id="obsUrl">http://localhost:3000/overlay/abcd1234</span><button class="copybtn" type="button" id="copyBtn">Kopieren</button></div>
+        <p style="font-size:14px">Breite und Höhe passend zum Overlay setzen. Der Hintergrund ist automatisch transparent.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="sec-head" data-reveal>
+      <span class="eyebrow">FAQ</span>
+      <h2>Häufige Fragen</h2>
+    </div>
+    <div class="faq">
+      <details open data-reveal style="--d:0"><summary>Kostet FaceitWatcher etwas?</summary><p>Nein. Das Projekt ist Open Source und kostenlos. Den Faceit-API-Key bekommst du ebenfalls kostenlos im Faceit Developer Portal.</p></details>
+      <detailsNone data-reveal style="--d:1"><summary>Wo werden meine Statistiken gespeichert?</summary><p>Lokal auf deinem Rechner in einer SQLite-Datenbank. Es gibt keinen fremden Server, der deine Daten sammelt.</p></details>
+      <detailsNone data-reveal style="--d:2"><summary>Funktioniert das auch mit Streamlabs oder anderen Programmen?</summary><p>Ja, überall wo es eine Browserquelle gibt. Das Overlay ist eine normale Webseite mit transparentem Hintergrund.</p></details>
+      <detailsNone data-reveal style="--d:3"><summary>Wie schnell aktualisiert sich das Overlay?</summary><p>FaceitWatcher fragt die Faceit-API regelmäßig ab und schickt neue Werte sofort ans Overlay. Nach einem Match dauert es meist nur wenige Sekunden.</p></details>
+      <detailsNone data-reveal style="--d:4"><summary>Gibt es das später auch online, ohne Installation?</summary><p>Das ist geplant. FaceitWatcher startet als lokales Tool und ist so gebaut, dass daraus später eine Web-App werden kann.</p></details>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="cta" data-reveal>
+      <div>
+        <h2>Bau dir dein Overlay</h2>
+        <p>FaceitWatcher ist in aktiver Entwicklung. Folge dem Projekt auf GitHub, um die erste Version nicht zu verpassen.</p>
+      </div>
+      <a class="btn primary" href="https://github.com/fersehet/faceitwatcher" target="_blank" rel="noopener">Projekt auf GitHub</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>FaceitWatcher · Open-Source-Projekt · <a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a></span>
+    <span>Nicht mit FACEIT verbunden. FACEIT ist eine Marke ihres jeweiligen Inhabers.</span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Ladebildschirm: Logo baut sich auf, Balken folgt dem Laden, dann verschwimmt alles in die Seite
+  var intro = document.getElementById('intro');
+  var bar = intro.querySelector('.intro-bar i');
+  var started = performance.now();
+  var setBar = function (p) { bar.style.setProperty('--p', p); };
+  var finished = false;
+  var finish = function () {
+    if (finished) return;
+    finished = true;
+    setBar(1);
+    var wait = reduced ? 0 : Math.max(0, 1300 - (performance.now() - started));
+    setTimeout(function () {
+      intro.classList.add('done');
+      document.body.classList.add('ready');
+      startReveals();
+    }, wait);
+  };
+  setTimeout(function () { setBar(.45); }, 200);
+  document.fonts && document.fonts.ready.then(function () { setBar(.8); });
+  if (document.readyState === 'complete') finish(); else window.addEventListener('load', finish);
+  setTimeout(finish, 4000);
+
+  document.getElementById('copyBtn').addEventListener('click', function () {
+    var btn = this, text = document.getElementById('obsUrl').textContent;
+    var done = function () { btn.textContent = 'Kopiert'; setTimeout(function () { btn.textContent = 'Kopieren'; }, 1600); };
+    var fallback = function () { var r = document.createRange(); r.selectNodeContents(document.getElementById('obsUrl')); var s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = 'Markiert'; };
+    try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+  });
+
+  // Example Elo history chart, one scale for everything
+  var elo = [1572, 1597, 1574, 1550, 1574, 1598, 1621, 1598, 1622, 1645, 1621, 1597, 1620, 1643, 1667, 1644, 1620, 1636, 1659, 1684];
+  var W = 600, H = 220, padL = 44, padR = 12, padT = 12, padB = 24;
+  var min = 1500, max = 1775;
+  var x = function (i) { return padL + i * (W - padL - padR) / (elo.length - 1); };
+  var y = function (v) { return padT + (max - v) * (H - padT - padB) / (max - min); };
+  var ns = 'http://www.w3.org/2000/svg';
+  var grid = document.getElementById('grid');
+  [1500, 1600, 1700].forEach(function (v) {
+    var l = document.createElementNS(ns, 'line');
+    l.setAttribute('x1', padL); l.setAttribute('x2', W - padR); l.setAttribute('y1', y(v)); l.setAttribute('y2', y(v));
+    l.setAttribute('stroke', 'var(--line)'); grid.appendChild(l);
+    var t = document.createElementNS(ns, 'text');
+    t.setAttribute('x', padL - 8); t.setAttribute('y', y(v) + 4); t.setAttribute('text-anchor', 'end'); t.textContent = v;
+    grid.appendChild(t);
+  });
+  var lv = document.createElementNS(ns, 'line');
+  lv.setAttribute('x1', padL); lv.setAttribute('x2', W - padR); lv.setAttribute('y1', y(1751)); lv.setAttribute('y2', y(1751));
+  lv.setAttribute('stroke', 'var(--muted)'); lv.setAttribute('stroke-dasharray', '4 5'); grid.appendChild(lv);
+  var lt = document.createElementNS(ns, 'text');
+  lt.setAttribute('x', W - padR); lt.setAttribute('y', y(1751) - 6); lt.setAttribute('text-anchor', 'end'); lt.textContent = 'Level 9';
+  grid.appendChild(lt);
+  [[0, 'Match 1'], [elo.length - 1, 'Match 20']].forEach(function (p) {
+    var t = document.createElementNS(ns, 'text');
+    t.setAttribute('x', x(p[0])); t.setAttribute('y', H - 6); t.setAttribute('text-anchor', p[0] ? 'end' : 'start'); t.textContent = p[1];
+    grid.appendChild(t);
+  });
+  var d = elo.map(function (v, i) { return (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1); }).join(' ');
+  document.getElementById('line').setAttribute('d', d);
+  document.getElementById('area').setAttribute('d', d + ' L' + x(elo.length - 1) + ' ' + y(min) + ' L' + x(0) + ' ' + y(min) + ' Z');
+  var lineEl = document.getElementById('line');
+  lineEl.style.setProperty('--len', Math.ceil(lineEl.getTotalLength()));
+  var dots = document.getElementById('dots');
+  elo.forEach(function (v, i) {
+    if (i === 0) return;
+    var c = document.createElementNS(ns, 'circle');
+    c.style.setProperty('--i', i);
+    c.setAttribute('cx', x(i)); c.setAttribute('cy', y(v)); c.setAttribute('r', i === elo.length - 1 ? 5 : 2.5);
+    c.setAttribute('fill', v >= elo[i - 1] ? 'var(--up)' : 'var(--down)');
+    dots.appendChild(c);
+  });
+
+  // Einblenden beim Scrollen, Zahlen zählen hoch, Diagramm zeichnet sich
+  document.querySelectorAll('.levels div').forEach(function (el, i) { el.style.setProperty('--i', i); });
+  var fmt = function (n) { return Math.round(n).toLocaleString('de-DE'); };
+  var countUp = function (el) {
+    var to = Number(el.dataset.count);
+    if (reduced) { el.textContent = fmt(to); return; }
+    var from = to > 100 ? to * .9 : 0, t0 = performance.now(), dur = 1200;
+    (function tick(now) {
+      var k = Math.min(1, (now - t0) / dur);
+      el.textContent = fmt(from + (to - from) * (1 - Math.pow(1 - k, 3)));
+      if (k < 1) requestAnimationFrame(tick);
+    })(t0);
+  };
+  function startReveals() {
+    var targets = document.querySelectorAll('[data-reveal], .chart, .panel');
+    if (!('IntersectionObserver' in window)) {
+      targets.forEach(function (el) { el.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('in');
+        e.target.querySelectorAll('[data-count]').forEach(countUp);
+        io.unobserve(e.target);
+      });
+    }, { threshold: .15, rootMargin: '0px 0px -40px 0px' });
+    targets.forEach(function (el) { io.observe(el); });
+  }
+
+  // Navigation: Schatten, Fortschrittsbalken und aktiver Abschnitt
+  var nav = document.querySelector('.nav');
+  var progress = document.getElementById('progress');
+  var onScroll = function () {
+    var max = document.documentElement.scrollHeight - innerHeight;
+    progress.style.transform = 'scaleX(' + (max > 0 ? scrollY / max : 0) + ')';
+    nav.classList.toggle('scrolled', scrollY > 8);
+  };
+  addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  var secIds = ['top', 'features', 'stats', 'setup', 'faq'];
+  var secs = secIds.map(function (id) { return document.getElementById(id); });
+  var railFill = document.querySelector('.rail-track i');
+  var groups = ['.nav-links', '#rail', '#mnav'].map(function (sel) {
+    var map = {};
+    document.querySelectorAll(sel + ' a[href^="#"]').forEach(function (a) { map[a.getAttribute('href').slice(1)] = a; });
+    return map;
+  });
+  var mnav = document.getElementById('mnav');
+  var lastActive = '';
+  var spy = function () {
+    var mid = innerHeight * 0.4, idx = 0, frac = 0;
+    var atEnd = innerHeight + scrollY >= document.documentElement.scrollHeight - 4;
+    secs.forEach(function (sec, i) { if (sec.getBoundingClientRect().top <= mid) idx = i; });
+    if (atEnd) idx = secs.length - 1;
+    else if (idx < secs.length - 1) {
+      var a = secs[idx].getBoundingClientRect().top, b = secs[idx + 1].getBoundingClientRect().top;
+      frac = Math.min(1, Math.max(0, (mid - a) / (b - a)));
+    }
+    railFill.parentNode.parentNode.style.setProperty('--fill', (idx + frac) / (secs.length - 1));
+    var id = secIds[idx];
+    groups.forEach(function (map, g) {
+      secIds.forEach(function (sid, i) {
+        var link = map[sid];
+        if (!link) return;
+        link.classList.toggle('active', sid === id && !(g === 0 && sid === 'top'));
+        link.classList.toggle('passed', i < idx);
+      });
+    });
+    if (id !== lastActive) {
+      lastActive = id;
+      var chip = groups[2][id];
+      if (chip && getComputedStyle(mnav).display !== 'none') mnav.scrollBy({ left: chip.getBoundingClientRect().left - mnav.getBoundingClientRect().left - 16, behavior: reduced ? 'auto' : 'smooth' });
+    }
+  };
+  addEventListener('scroll', spy, { passive: true });
+  addEventListener('resize', spy);
+  spy();
+
+  // Funktionskarten: Lichtschein folgt der Maus
+  var featGrid = document.querySelector('.features');
+  var cards = featGrid.querySelectorAll('.feat');
+  featGrid.addEventListener('pointermove', function (e) {
+    var g = featGrid.getBoundingClientRect();
+    featGrid.style.setProperty('--gx', (e.clientX - g.left) + 'px');
+    featGrid.style.setProperty('--gy', (e.clientY - g.top) + 'px');
+    cards.forEach(function (card) {
+      var r = card.getBoundingClientRect();
+      card.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+      card.style.setProperty('--my', (e.clientY - r.top) + 'px');
+    });
+  });
+
+})();
+</script>
+<script type="module">
+// Vorschau mit dem echten Overlay: derselbe Renderer wie die OBS-Browserquelle (js/render.js aus dem Tool).
+// Auf dem FaceitWatcher-Server kommen Overlay und Werte live aus live.json, sonst Beispieldaten aus demo.json.
+import { renderOverlay } from './js/render.js';
+
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const scene = document.getElementById('scene');
+const slot = document.getElementById('slot');
+const container = document.getElementById('overlay');
+const TOGGLES = ['avatar', 'nickname', 'level', 'elo', 'eloProgress', 'eloToday', 'sessionRecord', 'kd', 'winRate', 'hsPercent', 'recentResults'];
+
+let overlay, state, live = false;
+
+async function load(url) {
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error(res.status);
+  const data = await res.json();
+  if (!data.overlay || !data.state) throw new Error('leer');
+  return data;
+}
+
+try {
+  ({ overlay, state } = await load('live.json'));
+  live = true;
+} catch {
+  ({ overlay, state } = await load('demo.json'));
+}
+
+const source = document.getElementById('dataSource');
+if (live) {
+  source.textContent = state.demo ? 'Server · Demo-Modus' : 'Live-Daten';
+  source.classList.toggle('live', !state.demo);
+  document.getElementById('demoNote').textContent = 'Das ist das echte Overlay vom FaceitWatcher-Server mit den aktuellen Werten. Deine Änderungen hier bleiben nur in dieser Vorschau.';} else if (state.player) {
+  source.textContent = `${state.player.nickname} · Stand 24.10.`;
+  document.getElementById('demoNote').textContent = `Echtes Overlay mit dem Faceit-Account ${state.player.nickname} (Stand 24.10.2026). Die Matches, die hier durchlaufen, sind simuliert. Probier die Schalter aus.`;
+}
+
+// Kurzer Ladebildschirm in der Vorschau, wenn sich etwas ändert
+const loader = document.createElement('div');
+loader.className = 'fw-loader';
+loader.innerHTML = '<img src="logo.svg" alt="">';
+scene.append(loader);
+let loaderTimer;
+const pulse = () => {
+  loader.classList.add('on');
+  clearTimeout(loaderTimer);
+  loaderTimer = setTimeout(() => loader.classList.remove('on'), 450);
+};
+
+function draw() {
+  renderOverlay(container, overlay, state);
+  // Ohne Server gibt es keinen Bild-Cache: Faceit-Bilder direkt laden, sonst Anfangsbuchstabe
+  if (!live) {
+    container.querySelectorAll('img[src*="/assets/remote?url="]').forEach((img) => {
+      img.src = new URL(img.src).searchParams.get('url');
+      img.onerror = () => {
+        if (state.player && img.src === state.player.avatar) { state.player.avatar = ''; draw(); } else img.remove();
+      };
+    });
+  }
+  fit();
+}
+
+// Overlay passend zur Szenengröße skalieren
+function fit() {
+  const game = scene.querySelector('.game').clientWidth;
+  // Auf dem Handy etwas größer, damit die Werte lesbar bleiben
+  const share = scene.clientWidth < 520 ? 0.64 : 0.44;
+  const scale = Math.min(1.2, (game * share) / overlay.style.width);
+  container.style.transform = `scale(${scale})`;
+  const w = overlay.style.width * scale, h = overlay.style.height * scale;
+  slot.style.width = `${w}px`;
+  slot.style.height = `${h}px`;
+  scene.style.setProperty('--sw', `${w}px`);
+  scene.style.setProperty('--sh', `${h}px`);
+}
+new ResizeObserver(fit).observe(scene);
+
+// Schalter aus den echten Widgets des Overlays
+const chips = document.getElementById('statChips');
+for (const type of TOGGLES) {
+  const widget = overlay.widgets.find((w) => w.type === type);
+  if (!widget) continue;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'chip';
+  btn.textContent = widget.label;
+  btn.setAttribute('aria-pressed', String(widget.enabled));
+  btn.addEventListener('click', () => {
+    widget.enabled = !widget.enabled;
+    btn.setAttribute('aria-pressed', String(widget.enabled));
+    pulse();
+    draw();
+  });
+  chips.append(btn);
+}
+
+const swatches = document.querySelectorAll('.sw');
+const ownAccent = overlay.style.accentColor.toLowerCase();
+if (![...swatches].some((s) => s.dataset.color === ownAccent)) {
+  swatches[0].dataset.color = ownAccent;
+  swatches[0].style.setProperty('--c', ownAccent);
+  swatches[0].setAttribute('aria-label', 'Farbe aus deinem Overlay');
+}
+swatches.forEach((sw) => {
+  sw.setAttribute('aria-pressed', String(sw.dataset.color === ownAccent));
+  sw.addEventListener('click', () => {
+    swatches.forEach((s) => s.setAttribute('aria-pressed', 'false'));
+    sw.setAttribute('aria-pressed', 'true');
+    overlay.style.accentColor = sw.dataset.color;
+    if (overlay.style.borderWidth) overlay.style.borderColor = sw.dataset.color;
+    pulse();
+    draw();
+  });
+});
+
+const corners = [['pos-tl', 'oben links'], ['pos-tr', 'oben rechts'], ['pos-br', 'unten rechts']];
+let ci = 0;
+const pBtn = document.getElementById('l-pos');
+pBtn.addEventListener('click', () => {
+  scene.classList.remove(corners[ci][0]);
+  ci = (ci + 1) % corners.length;
+  scene.classList.add(corners[ci][0]);
+  pBtn.textContent = `Ecke: ${corners[ci][1]}`;
+});
+
+const aBtn = document.getElementById('l-alpha');
+aBtn.addEventListener('click', () => {
+  const on = aBtn.getAttribute('aria-pressed') !== 'true';
+  aBtn.setAttribute('aria-pressed', String(on));
+  scene.classList.toggle('alpha', on);
+  pulse();
+});
+
+draw();
+
+// Chat, Killfeed und Follower-Alarm halten die Szene lebendig
+const chat = document.getElementById('chat');
+// Namen im Chat: aus demo.json (chatNames), sonst erfundene. Echte Namen nur mit Einverständnis der Personen eintragen.
+const COLORS = ['#7dd3fc', '#f472b6', '#a3e635', '#fbbf24', '#c4b5fd', '#5eead4', '#fca5a5'];
+const fallbackNames = ['ancientEnjoyer', 'xX_awp_Xx', 'mirage_mama', 'brotkasten', 'eco_round', 'nadeking', 'flick_ingo'];
+const chatNames = await fetch('demo.json').then((r) => r.json()).then((d) => d.chatNames).catch(() => null);
+const NAMES = (Array.isArray(chatNames) && chatNames.length ? chatNames : fallbackNames).map((n, i) => [n, COLORS[i % COLORS.length]]);
+const LINES = ['wie viel elo noch bis lvl 8?', 'das overlay ist clean', 'ONE TAP 😳', 'eco runde?', 'ggwp', 'welche sens spielst du', 'smoke mid bitte', 'lets gooo', 'der crosshair 🔥', '!elo', 'clutch incoming', 'HS-Quote ist crazy'];
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+function say(text, highlight = false, who = pick(NAMES)) {
+  const p = document.createElement('p');
+  if (highlight) p.className = 'hl';
+  const b = document.createElement('b');
+  b.style.color = who[1];
+  b.textContent = `${who[0]}: `;
+  p.append(b, text);
+  chat.append(p);
+  while (chat.children.length > 12) chat.firstElementChild.remove();
+}
+for (let i = 0; i < 6; i++) say(pick(LINES));
+
+const killfeed = document.getElementById('killfeed');
+const ENEMIES = ['Bot Ivan', 'n0name', 'dust2king', 'lurker99', 'awpbaron'];
+// Kills und Tode des Streamers im laufenden Match, daraus entstehen Ergebnis, K/D und Winrate
+const round = { kills: 0, deaths: 0 };
+function feed(killer, victim, mine) {
+  const d = document.createElement('div');
+  d.innerHTML = '<span class="ct"></span> ⌖ <span class="t"></span>';
+  d.children[0].textContent = killer;
+  d.children[1].textContent = victim;
+  if (mine) d.classList.add('me');
+  killfeed.prepend(d);
+  while (killfeed.children.length > 3) killfeed.lastElementChild.remove();
+}
+function kill() {
+  const me = state.player?.nickname ?? 'Du';
+  if (live) return feed(pick(['s1mple_jr', 'ropz_fan', 'kRYSTAL']), pick(ENEMIES), false);
+  // Läuft es gerade gut, wird es schwerer: so bleibt die Elo in der Nähe des echten Stands
+  const drift = ((state.player?.elo ?? 0) - startElo) / 300;
+  if (Math.random() < 0.55 - drift) {
+    round.kills++;
+    feed(me, pick(ENEMIES), true);
+    const gun = document.getElementById('gun');
+    gun.classList.remove('fire');
+    void gun.offsetWidth;
+    gun.classList.add('fire');
+    const ammo = document.getElementById('ammo');
+    ammo.textContent = Math.max(1, Number(ammo.textContent) - 3);
+  } else {
+    round.deaths++;
+    feed(pick(ENEMIES), me, true);
+  }
+}
+
+const alertBox = document.getElementById('alert');
+function follow() {
+  document.getElementById('alertName').textContent = pick(NAMES)[0];
+  alertBox.classList.add('on');
+  setTimeout(() => alertBox.classList.remove('on'), 2600);
+}
+
+const LEVELS = [0, 501, 751, 901, 1051, 1201, 1351, 1531, 1751, 2001];
+const startElo = state.player?.elo ?? 0;
+const rand = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
+// Lebenslange Kills/Tode, passend zur echten K/D (ca. 18 Tode pro Match)
+const totals = { deaths: (state.player?.matches ?? 0) * 18 };
+totals.kills = Math.round(totals.deaths * (state.player?.kd ?? 1));
+
+// Ohne Server: das Match endet nach ein paar Killfeed-Einträgen, Ergebnis und Stats folgen daraus
+function playMatch() {
+  const p = state.player, s = state.session;
+  if (!p || !s) return;
+  const diff = round.kills - round.deaths;
+  const kills = Math.max(4, 15 + 3 * diff + rand(-2, 2));
+  const deaths = Math.max(4, 16 - 2 * diff + rand(-2, 2));
+  const win = kills - deaths + rand(-4, 4) > 0;
+  const delta = (win ? 1 : -1) * rand(21, 26);
+  const [us, them] = win ? [13, rand(4, 11)] : [rand(4, 11), 13];
+  round.kills = round.deaths = 0;
+
+  totals.kills += kills;
+  totals.deaths += deaths;
+  p.elo += delta;
+  p.level = LEVELS.filter((min) => p.elo >= min).length;
+  p.matches += 1;
+  if (win) p.wins += 1;
+  p.winRate = Math.round((p.wins / p.matches) * 100);
+  p.kd = Math.round((totals.kills / totals.deaths) * 100) / 100;
+  p.currentStreak = win ? p.currentStreak + 1 : 0;
+  p.longestStreak = Math.max(p.longestStreak, p.currentStreak);
+  p.recentResults = [win ? 'W' : 'L', ...p.recentResults].slice(0, 5);
+  s.eloChange += delta;
+  s.matches += 1;
+  if (win) s.wins += 1; else s.losses += 1;
+  draw();
+  say(`${win ? 'GG' : 'unlucky'} ${us}:${them}, ${kills}/${deaths} · ${delta > 0 ? '+' : ''}${delta} Elo ${win ? '🔥' : '😭'}`, true);
+  document.getElementById('ammo').textContent = '30';
+}
+
+if (!reduced) {
+  let tick = 0;
+  setInterval(() => {
+    if (document.hidden) return;
+    tick++;
+    say(pick(LINES));
+    if (tick % 2 === 0) kill();
+    if (tick % 11 === 0) follow();
+    if (!live && tick % 8 === 0) playMatch();
+  }, 1500);
+}
+
+// Mit Server: neue Werte regelmäßig holen
+if (live) {
+  setInterval(async () => {
+    try {
+      const data = await load('live.json');
+      state = data.state;
+      draw();
+    } catch {}
+  }, 30000);
+}
+</script>
+</body>
+</html>
