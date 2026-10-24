@@ -175,12 +175,13 @@ function widgetContent(widget, style, state) {
       const [w, h] = [size * 2.086, size * 1.4];
       for (const m of recent) {
         const color = m.result === 'W' ? style.positiveColor : style.negativeColor;
-        const text = m.eloChange == null ? m.result : `${m.eloChange > 0 ? '+' : ''}${m.eloChange}`;
+        // Ohne bekannte Elo-Änderung nur ein Strich, nie W/L
+        const text = m.eloChange == null ? '–' : `${m.eloChange > 0 ? '+' : ''}${m.eloChange}`;
         row.appendChild(
           el(
             'div',
             {
-              width: `${w}px`, height: `${h}px`, borderRadius: '4px', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: `${size * 0.95}px`,
+              width: `${w}px`, height: `${h}px`, borderRadius: '4px', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: `${size * 0.95}px`, lineHeight: 1,
               background: hexToRgba(color, 0.25), color,
             },
             text,
