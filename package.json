@@ -1,0 +1,26 @@
+{
+  "name": "faceitwatcher",
+  "version": "0.1.0",
+  "description": "Faceit Companion: eigene Elo-/Profil-Overlays für OBS bauen und Faceit-Statistiken lokal speichern.",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning --import tsx src/server.ts",
+    "dev": "tsx watch --disable-warning=ExperimentalWarning src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "bot": "node --import tsx src/bot/index.ts",
+    "bot:test": "node --import tsx src/bot/index.ts --test"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "tsx": "^4.20.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.15.0",
+    "typescript": "^5.9.3"
+  }
+}
