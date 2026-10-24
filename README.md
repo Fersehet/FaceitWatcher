@@ -26,7 +26,7 @@ cp .env.example .env   # unter Windows: copy .env.example .env
 npm start
 ```
 
-Dann im Browser **http://localhost:3000** öffnen.
+In `.env` vorher `ADMIN_PASSWORD` setzen (siehe [Login](#login)). Dann im Browser **http://localhost:3000** öffnen und anmelden.
 
 ## Faceit API-Key holen
 
@@ -57,16 +57,22 @@ In OBS dann die LAN-Adresse des Servers verwenden, z. B. `http://192.168.0.10:30
 
 Update: `git pull` und danach `docker compose up -d --build`.
 
-## Landingpage (optional)
+## Login
 
-Der Server kann zusätzlich eine statische Website unter `/site/` ausliefern. Sie gehört nicht zu diesem Repo: Lege die Dateien in den Ordner `website/` neben dieser README (wird von Git ignoriert und in Docker eingebunden) oder gib mit `SITE_DIR` einen anderen Ordner an.
+Der Editor ist nur nach Anmeldung erreichbar, auch auf localhost. Zugang in `.env` eintragen und den Server neu starten:
 
-Mit `SITE_HOST=deine-domain.de` in `.env` zeigt der Server unter dieser Domain die Website (z. B. hinter Nginx Proxy Manager). Der Editor ist dort nur nach Login erreichbar:
+```env
+ADMIN_USER=admin
+ADMIN_PASSWORD=ein-langes-passwort
+```
 
-1. In `.env` `ADMIN_USER` (Standard `admin`) und ein langes `ADMIN_PASSWORD` eintragen, Server neu starten.
-2. Auf der Website oben auf **Login** klicken (Seite `login.html` aus dem Website-Repo), danach geht es direkt in den Editor (`/editor.html`).
+Ohne Login lesbar bleiben die Overlays (`/overlay/<id>`, für OBS), die Bilder unter `/assets/` und die lesenden Endpunkte unten. Alles andere (Editor, Änderungen über die API) braucht die Anmeldung. Nach 10 falschen Versuchen sperrt der Server die IP für 15 Minuten. Ein neues Passwort meldet alle Sitzungen ab. Der Editor ist auf Deutsch, Englisch, Russisch und Französisch (Umschalter oben rechts).
 
-Ohne Login sind über die Domain nur die Website, die Bilder und die Overlays lesend erreichbar (`/overlay/<id>`, damit OBS auch von außen funktioniert). Alles andere (Editor, Änderungen über die API) braucht die Anmeldung. Nach 10 falschen Versuchen sperrt der Server die IP für 15 Minuten. Ein neues Passwort meldet alle Sitzungen ab. Ohne `ADMIN_PASSWORD` bleibt der Editor über die Domain gesperrt. Im Heimnetz (localhost oder LAN-IP) braucht der Editor weiterhin keinen Login.
+## Website (optional)
+
+Liegen die Dateien der Website im Ordner `website/` neben dieser README (eigenes, privates Repo, wird hier von Git ignoriert) oder in `SITE_DIR`, zeigt der Server sie auf `/`. Dort gibt es oben den Login, danach geht es in den Editor (`/editor.html`). Ohne Website führt `/` direkt zum Login und Editor.
+
+Öffentlich über Nginx Proxy Manager: einen Proxy Host auf Port `3000` des Servers anlegen (mit SSL). Eine eigene Einstellung für die Domain braucht es nicht mehr.
 
 ## Schnittstelle für andere Clients
 

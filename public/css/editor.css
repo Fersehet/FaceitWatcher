@@ -40,9 +40,9 @@ header {
 .overlay-picker { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
 
 .account { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; }
-.account[hidden] { display: none; }
 .account a { color: var(--muted); }
 .account a:hover { color: var(--text); }
+.account .lang { padding: 4px 6px; }
 
 main { display: grid; grid-template-columns: 360px 1fr; height: calc(100vh - 53px); }
 
