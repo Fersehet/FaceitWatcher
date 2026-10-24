@@ -72,6 +72,8 @@ Die Werbeseite aus `website/` liefert derselbe Server mit aus, mit `npm start` g
 
 Unter der `SITE_HOST`-Domain beantwortet der Server nur Anfragen für die Landingpage. Editor, Overlays und API sind darüber nicht erreichbar und bleiben im Heimnetz.
 
+Die Datenschutzerklärung sagt, dass Server-Logs nach 14 Tagen gelöscht werden. Wie du den Nginx Proxy Manager darauf einstellst, steht in [deploy/nginx-proxy-manager](deploy/nginx-proxy-manager/README.md). Die Platzhalter in `website/impressum.html` und `website/datenschutz.html` (orange markiert) vor dem Veröffentlichen ersetzen.
+
 ## Discord-Bot
 
 Nach jedem beendeten Match postet der Bot das Ergebnis in einen Channel: Sieg/Niederlage, Map, Endstand, Elo-Änderung, K/D/A, K/D, ADR, HS % und MVPs. Der Bot fragt Faceit nicht selbst ab, er bekommt die Matches vom Server. Fehlt eine Nachricht, weil der Bot kurz weg war, holt er sie beim Wiederverbinden nach. Beim allerersten Start werden alte Matches übersprungen.
