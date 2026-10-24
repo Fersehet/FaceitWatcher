@@ -65,7 +65,7 @@ export function defaultStyle(): OverlayStyle {
     borderRadius: 12,
     borderColor: '#ff5500',
     borderWidth: 0,
-    fontFamily: 'Rajdhani',
+    fontFamily: 'Play',
     textColor: '#ffffff',
     labelColor: '#9aa0a6',
     accentColor: '#ff5500',
