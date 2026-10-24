@@ -170,7 +170,7 @@ function widgetContent(widget, style, state) {
       return p ? el('div', { fontWeight: 600 }, String(p.longestStreak)) : null;
     case 'recentResults': {
       if (!p) return null;
-      // Ältere Server liefern noch keine recentMatches: dann nur W/L ohne Elo
+      // Ältere Server liefern noch keine recentMatches: dann Kästen ohne Zahl
       const recent = state?.recentMatches?.length ? state.recentMatches : p.recentResults.map((result) => ({ result, eloChange: null }));
       const row = el('div', { display: 'flex', gap: `${size * 0.25}px` });
       // Im Standard-Layout (x 240, Schrift 14) enden die fünf Kästen genau mit dem Elo-Balken bei x 400
