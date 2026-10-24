@@ -5,7 +5,7 @@
   </picture>
 </h1>
 
-Lokales Tool, mit dem du eigene Faceit-Overlays (Elo, Level, Session-Stats, K/D, …) für OBS baust und deine Faceit-Statistiken automatisch speicherst.
+Overlay-Editor und OBS-Overlay, mit denen du eigene Faceit-Overlays (Elo, Level, Session-Stats, K/D, …) für OBS baust und deine Faceit-Statistiken automatisch speicherst.
 
 - **Editor im Browser**: jede Stat einzeln an/aus, per Drag & Drop verschieben (mit Einrasten an anderen Elementen), Farben, Schrift, Größe, Hintergrund, Rahmen. Mehrere Overlays möglich.
 - **OBS-Browserquelle**: transparentes Overlay, aktualisiert sich live, auch während du im Editor etwas änderst.
@@ -43,20 +43,6 @@ Den Nickname setzt du direkt im Editor (oder als `FACEIT_NICKNAME` in `.env`).
 2. In OBS: **Quelle hinzufügen → Browser**, URL einfügen.
 3. Breite und Höhe so eintragen wie im Editor unter **Design**.
 
-## Docker (z. B. auf einem Heimserver)
-
-`docker-compose.yml` startet den FaceitWatcher-Server (Editor, Overlay, Faceit-Abfrage).
-
-```bash
-cp .env.example .env      # Werte eintragen, siehe unten
-docker compose up -d --build
-docker compose logs -f    # Ausgabe ansehen
-```
-
-In OBS dann die LAN-Adresse des Servers verwenden, z. B. `http://192.168.0.10:3000/overlay/abcd1234`. Alle Daten liegen im Ordner `data/` neben der `docker-compose.yml`.
-
-Update: `git pull` und danach `docker compose up -d --build`.
-
 ## Login
 
 Der Editor ist nur nach Anmeldung erreichbar, auch auf localhost. Zugang in `.env` eintragen und den Server neu starten:
@@ -68,11 +54,9 @@ ADMIN_PASSWORD=ein-langes-passwort
 
 Ohne Login lesbar bleiben die Overlays (`/overlay/<id>`, für OBS), die Bilder unter `/assets/` und die lesenden Endpunkte unten. Alles andere (Editor, Änderungen über die API) braucht die Anmeldung. Nach 10 falschen Versuchen sperrt der Server die IP für 15 Minuten. Ein neues Passwort meldet alle Sitzungen ab. Der Editor ist auf Deutsch, Englisch, Russisch und Französisch (Umschalter oben rechts).
 
-## Website (optional)
+## Eigene Startseite (optional)
 
-Liegen die Dateien der Website im Ordner `website/` neben dieser README (eigenes, privates Repo, wird hier von Git ignoriert) oder in `SITE_DIR`, zeigt der Server sie auf `/`. Dort gibt es oben den Login, danach geht es in den Editor (`/editor.html`). Ohne Website führt `/` direkt zum Login und Editor.
-
-Öffentlich über Nginx Proxy Manager: einen Proxy Host auf Port `3000` des Servers anlegen (mit SSL). Eine eigene Einstellung für die Domain braucht es nicht mehr.
+Liegt im Ordner `website/` neben dieser README (oder in `SITE_DIR`) eine `index.html`, zeigt der Server sie ohne Login auf `/`, der Editor verlinkt dann dorthin. Ohne Startseite führt `/` direkt zum Login und Editor. Der Ordner wird von Git ignoriert.
 
 ## Schnittstelle für andere Clients
 
@@ -84,8 +68,8 @@ Die Faceit-API wird **nur vom Server** abgefragt. Overlay und Editor lesen diese
 | `GET /api/matches?limit=20` | gespeicherte Matches, neueste zuerst (`MatchResult`, siehe `src/faceit/types.ts`) |
 | `GET /api/history?since=ISO` | Elo-Verlauf |
 | `GET /api/events` | Server-Sent Events: `state`, `overlay`, `match` |
-| `GET /api/me` | Login-Status (`user`, `loginEnabled`, `site`) |
-| `POST /api/login` / `POST /api/logout` | An- und Abmelden für den Editor über die Website (`{ "user", "password" }`) |
+| `GET /api/me` | Login-Status (`user`, `loginEnabled`, `startPage`) |
+| `POST /api/login` / `POST /api/logout` | An- und Abmelden für den Editor (`{ "user", "password" }`) |
 | `GET /assets/level/1` … `/10` | offizielles Faceit-Level-Symbol (lokal zwischengespeichert) |
 | `GET /assets/remote?url=…` | Faceit-Bild (Avatar, Avatar-Rahmen) aus dem lokalen Cache |
 
@@ -108,10 +92,14 @@ src/
   storage/storage.ts Speicher-Interface
   storage/sqlite.ts  SQLite-Umsetzung (node:sqlite, keine nativen Abhängigkeiten)
   overlays/          Overlay-Datenmodell und Standard-Layout
+  auth.ts            Login für den Editor
+  assets.ts          Cache für Faceit-Bilder (Level-Symbole, Avatar, Rahmen)
 public/
   editor.html        Editor
+  login.html         Login
   overlay.html       OBS-Overlay
   js/render.js       gemeinsamer Renderer für Editor-Vorschau und Overlay
+  js/i18n.js         Übersetzungen des Editors (DE/EN/RU/FR)
 ```
 
 ### Weg zur Web-App
