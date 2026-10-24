@@ -2,10 +2,11 @@ import express, { type Response } from 'express';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AssetCache, isFaceitUrl } from './assets.ts';
+import { Auth, type LoginError } from './auth.ts';
 import { config, demoReason, isDemo } from './config.ts';
 import { FaceitClient } from './faceit/client.ts';
 import { DemoSource } from './faceit/demo.ts';
-import { createDefaultOverlay, upgradeOverlay, useSeasonWinRate, WIDGET_LABELS } from './overlays/defaults.ts';
+import { createDefaultOverlay, defaultStyle, defaultWidgets, upgradeOverlay, useSeasonWinRate, WIDGET_LABELS } from './overlays/defaults.ts';
 import type { Overlay } from './overlays/types.ts';
 import { SqliteStorage } from './storage/sqlite.ts';
 import { Tracker } from './tracker.ts';
@@ -17,6 +18,10 @@ const source = isDemo ? new DemoSource() : new FaceitClient(config.faceitApiKey)
 const tracker = new Tracker(source, storage, isDemo ? 15 : config.pollIntervalSeconds, config.defaultNickname);
 
 const assets = new AssetCache(join(dirname(config.dbPath), 'assets'), config.levelIconUrl);
+const auth = new Auth(join(dirname(config.dbPath), 'session-secret'), config.sessionSecret, {
+  name: config.adminUser,
+  password: config.adminPassword,
+});
 
 if (storage.listOverlays(OWNER).length === 0) storage.saveOverlay(createDefaultOverlay());
 
@@ -38,8 +43,10 @@ tracker.on('state', (state) => broadcast('state', state));
 tracker.on('match', (match) => broadcast('match', match));
 
 const app = express();
+// Hinter Nginx Proxy Manager: echte Besucher-IP (für die Login-Sperre) und https-Erkennung (für sichere Cookies)
+app.set('trust proxy', 'loopback, linklocal, uniquelocal');
 
-// Landingpage: immer unter /site, auf den Domains aus SITE_HOST ausschließlich die Landingpage.
+// Landingpage: immer unter /site, auf den Domains aus SITE_HOST direkt auf /.
 // Die Vorschau dort nutzt den echten Overlay-Renderer und das erste gespeicherte Overlay (nur lesend).
 const site = express.Router();
 site.get('/js/render.js', (_req, res) => res.sendFile(fileURLToPath(new URL('../public/js/render.js', import.meta.url))));
@@ -48,12 +55,39 @@ site.get('/live.json', (_req, res) => {
   res.set('Cache-Control', 'no-cache').json({ overlay: overlay ? upgradeOverlay(overlay) : null, state: tracker.state });
 });
 site.use(express.static(config.siteDir));
+
+/** Was unter der Website-Domain ohne Login erreichbar ist: Overlays nur lesend (für OBS), Bilder und der Login selbst. */
+function isPublic(req: express.Request) {
+  if (['/api/login', '/api/logout', '/api/me'].includes(req.path)) return true;
+  if (req.method !== 'GET' && req.method !== 'HEAD') return false;
+  return (
+    req.path.startsWith('/assets/') ||
+    /^\/overlay\/[\w-]+$/.test(req.path) ||
+    /^\/api\/overlays\/[\w-]+$/.test(req.path) ||
+    ['/api/state', '/api/events', '/js/render.js', '/js/loader.js', '/favicon.svg'].includes(req.path)
+  );
+}
+
+const hostOf = (url: string) => URL.parse(url)?.host ?? null;
+const isSiteHost = (req: express.Request) => config.siteHosts.includes(req.hostname.toLowerCase());
+
 if (config.siteHosts.length > 0) {
   app.use((req, res, next) => {
-    if (!config.siteHosts.includes(req.hostname.toLowerCase())) return next();
-    // Bilder für das Overlay (Avatar, Level) dürfen durch, Editor und API bleiben von außen unerreichbar
-    if (req.method === 'GET' && req.path.startsWith('/assets/')) return next();
-    site(req, res, () => void res.status(404).send('Nicht gefunden'));
+    if (!isSiteHost(req)) return next();
+    site(req, res, () => {
+      if (isPublic(req)) return next();
+      if (auth.user(req)) {
+        // Änderungen nur von der eigenen Seite aus, nicht von fremden Seiten im selben Browser
+        const origin = req.headers.origin;
+        if (req.method !== 'GET' && req.method !== 'HEAD' && origin && hostOf(origin) !== req.headers.host) {
+          return void res.status(403).json({ error: 'Fremde Herkunft' });
+        }
+        return next();
+      }
+      if (req.path.startsWith('/api/')) return void res.status(401).json({ error: 'Bitte anmelden' });
+      if (req.method === 'GET') return res.redirect(`/login.html?next=${encodeURIComponent(req.originalUrl)}`);
+      res.status(404).send('Nicht gefunden');
+    });
   });
 }
 app.use('/site', site);
@@ -62,6 +96,29 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.static(fileURLToPath(new URL('../public', import.meta.url))));
 
 app.get('/', (_req, res) => res.redirect('/editor.html'));
+app.get('/editor', (_req, res) => res.redirect('/editor.html'));
+
+// Login für den Editor über die Website. Im Heimnetz ist der Editor auch ohne Login offen.
+app.get('/api/me', (req, res) => {
+  res.set('Cache-Control', 'no-store').json({ user: auth.user(req), loginEnabled: auth.enabled, site: isSiteHost(req) });
+});
+
+const LOGIN_ERRORS: Record<LoginError, { status: number; text: string }> = {
+  disabled: { status: 503, text: 'Login ist auf diesem Server nicht eingerichtet (ADMIN_PASSWORD in der .env fehlt).' },
+  locked: { status: 429, text: 'Zu viele Versuche. Bitte in 15 Minuten erneut probieren.' },
+  wrong: { status: 401, text: 'Benutzername oder Passwort falsch.' },
+};
+
+app.post('/api/login', (req, res) => {
+  const error = auth.login(req, res, String(req.body?.user ?? ''), String(req.body?.password ?? ''));
+  if (error) return void res.status(LOGIN_ERRORS[error].status).json({ error: LOGIN_ERRORS[error].text });
+  res.json({ ok: true });
+});
+
+app.post('/api/logout', (_req, res) => {
+  auth.logout(res);
+  res.status(204).end();
+});
 app.get('/overlay/:id', (_req, res) => res.sendFile(fileURLToPath(new URL('../public/overlay.html', import.meta.url))));
 
 app.get('/api/events', (req, res) => {
@@ -173,6 +230,16 @@ app.put('/api/overlays/:id', (req, res) => {
   res.json(overlay);
 });
 
+// Setzt Design und Elemente auf den Standard zurück, Name und OBS-Adresse bleiben
+app.post('/api/overlays/:id/reset', (req, res) => {
+  const existing = storage.getOverlay(req.params.id);
+  if (!existing) return void res.status(404).json({ error: 'Overlay nicht gefunden' });
+  const overlay: Overlay = { ...existing, style: defaultStyle(), widgets: defaultWidgets(), updatedAt: new Date().toISOString() };
+  storage.saveOverlay(overlay);
+  broadcast('overlay', overlay);
+  res.json(overlay);
+});
+
 app.delete('/api/overlays/:id', (req, res) => {
   if (storage.listOverlays(OWNER).length <= 1) return void res.status(400).json({ error: 'Das letzte Overlay kann nicht gelöscht werden' });
   storage.deleteOverlay(req.params.id);
@@ -183,5 +250,6 @@ app.listen(config.port, config.host, () => {
   console.log(`FaceitWatcher läuft: http://localhost:${config.port}`);
   if (isDemo) console.log(`Demo-Modus aktiv, es werden Beispieldaten angezeigt. Grund: ${demoReason()}`);
   else console.log(`Faceit API-Key geladen (endet auf ...${config.faceitApiKey.slice(-4)}).`);
+  if (config.siteHosts.length > 0 && !auth.enabled) console.log('Hinweis: ADMIN_PASSWORD fehlt, der Editor ist über die Website-Domain gesperrt.');
   tracker.start();
 });

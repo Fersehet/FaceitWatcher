@@ -39,6 +39,11 @@ header {
 
 .overlay-picker { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
 
+.account { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; }
+.account[hidden] { display: none; }
+.account a { color: var(--muted); }
+.account a:hover { color: var(--text); }
+
 main { display: grid; grid-template-columns: 360px 1fr; height: calc(100vh - 53px); }
 
 aside { overflow-y: auto; border-right: 1px solid var(--border); background: var(--panel); }
