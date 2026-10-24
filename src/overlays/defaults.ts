@@ -106,15 +106,28 @@ export function upgradeOverlay(overlay: Overlay): Overlay {
     record.showLabel = false;
     record.y = LAYOUT.sessionRecord.y!;
   }
-  // Früher zeigte das Standard-Overlay die Gesamt-Winrate, jetzt die der aktuellen Season
+  return overlay;
+}
+
+/**
+ * Ersetzt die Gesamt-Winrate durch die Season-Winrate an derselben Stelle.
+ * Gibt true zurück, wenn sich etwas geändert hat.
+ */
+export function useSeasonWinRate(overlay: Overlay): boolean {
   const total = overlay.widgets.find((w) => w.type === 'winRate');
   const season = overlay.widgets.find((w) => w.type === 'seasonWinRate');
-  if (total?.enabled && total.x === 16 && total.y === 120 && season && !season.enabled && season.x === 300 && season.y === 120) {
-    total.enabled = false;
-    total.x = LAYOUT.winRate.x!;
-    Object.assign(season, { enabled: true, x: 16, y: 120, label: season.label === 'Season Winrate' ? LABELS.seasonWinRate : season.label });
-  }
-  return overlay;
+  if (!total?.enabled || !season || season.enabled) return false;
+  Object.assign(season, {
+    enabled: true,
+    x: total.x,
+    y: total.y,
+    fontSize: total.fontSize,
+    color: total.color,
+    showLabel: total.showLabel,
+    label: season.label === 'Season Winrate' ? LABELS.seasonWinRate : season.label,
+  });
+  total.enabled = false;
+  return true;
 }
 
 export { LABELS as WIDGET_LABELS };
