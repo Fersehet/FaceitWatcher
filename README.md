@@ -100,7 +100,7 @@ Ein `match`-Event wird erst gesendet, wenn die Elo-Änderung des Matches bekannt
 ## Faceit-Symbole und Avatar-Rahmen
 
 - Die **Level-Symbole** sind standardmäßig ein eingebauter Nachbau im Faceit-Stil (Bogen in Levelfarbe mit Zahl) und funktionieren ohne Netzwerk. Alternativ lädt der Server die Originaldatei einmal von Faceits CDN und speichert sie unter `data/assets/`. Die Adresse lässt sich mit `LEVEL_ICON_URL` (Platzhalter `{level}`) anpassen. Lädt sie nicht, wird der Nachbau angezeigt. Die Auswahl findest du im Editor unter **Design → Level-Symbol**.
-- Den **Avatar-Rahmen** liefert die offizielle Data API nicht. Der Server liest ihn deshalb stündlich aus Faceits Profil-Schnittstelle der Webseite. Diese ist inoffiziell und kann sich ändern. Findet er keinen Rahmen, kannst du im Editor unter „Spieler“ selbst eine Bild-Adresse eintragen.
+- Den **Avatar-Rahmen** liefert die offizielle Data API nicht. Der Server liest ihn deshalb stündlich über die Schnittstelle, mit der auch die Faceit-Webseite den ausgerüsteten Rahmen lädt (`/api/user-summary/v2/list`). Diese ist inoffiziell und kann sich ändern. Findet er keinen Rahmen, kannst du im Editor unter „Spieler“ selbst eine Bild-Adresse eintragen.
 - **Nutzungsrechte**: Symbole, Rahmen und Logos gehören FACEIT. Sie werden deshalb nicht im Repo mitgeliefert, sondern nur lokal für dein eigenes Overlay zwischengespeichert. Für ein öffentliches Produkt (z. B. die spätere Web-App) bitte vorher die Erlaubnis von FACEIT einholen.
 
 ## Aufbau
