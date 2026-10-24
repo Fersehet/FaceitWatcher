@@ -1,4 +1,4 @@
-import type { MatchDetails, MatchRecord, PlayerSnapshot, StatsSource } from './types.ts';
+import type { EloAfterMatch, MatchDetails, MatchRecord, PlayerSnapshot, StatsSource } from './types.ts';
 
 const BASE_URL = 'https://open.faceit.com/data/v4';
 const GAME = 'cs2';
@@ -75,7 +75,7 @@ export class FaceitClient implements StatsSource {
       );
       const items: any[] = page.items ?? [];
       for (const m of items) {
-        if (m.status && String(m.status).toUpperCase() !== 'FINISHED') continue;
+        if (!isFinished(m) || !isMatchmaking(m)) continue;
         const winner = m.results?.winner;
         const team = Object.entries(m.teams ?? {}).find(([, t]: [string, any]) =>
           (t.players ?? []).some((p: any) => p.player_id === playerId),
@@ -90,10 +90,11 @@ export class FaceitClient implements StatsSource {
   }
 
   async fetchRecentMatches(playerId: string, count: number, isKnown: (matchId: string) => boolean): Promise<MatchDetails[]> {
-    const history = await this.get<any>(`/players/${playerId}/history?game=${GAME}&offset=0&limit=${count}`);
+    // Mehr laden als nötig, weil Turniere und Ligen herausgefiltert werden
+    const history = await this.get<any>(`/players/${playerId}/history?game=${GAME}&offset=0&limit=${count * 4}`);
     const results: MatchDetails[] = [];
-    for (const m of history.items ?? []) {
-      if (m.status && String(m.status).toUpperCase() !== 'FINISHED') continue;
+    const items = (history.items ?? []).filter((m: any) => isFinished(m) && isMatchmaking(m)).slice(0, count);
+    for (const m of items) {
       if (isKnown(m.match_id)) continue;
       const stats = await this.get<any>(`/matches/${m.match_id}/stats`);
       const round = stats.rounds?.[0];
@@ -140,6 +141,34 @@ export class FaceitClient implements StatsSource {
       return '';
     }
   }
+
+  /**
+   * Die Data API liefert keine Elo pro Match. Die Faceit-Webseite zeigt sie im Elo-Verlauf über die interne
+   * Schnittstelle /api/stats/v1/stats/time/users/{id}/games/cs2 ("elo" = Stand nach dem Match, "elo_delta" = Änderung).
+   * Ändert Faceit diese Schnittstelle, bleibt die Elo-Änderung älterer Matches einfach unbekannt.
+   */
+  async fetchEloHistory(playerId: string, count: number): Promise<EloAfterMatch[]> {
+    try {
+      const res = await fetch(`https://www.faceit.com/api/stats/v1/stats/time/users/${playerId}/games/${GAME}?page=0&size=${count}`, {
+        headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0 FaceitWatcher' },
+      });
+      if (!res.ok) return [];
+      const body = await res.json();
+      const items: any[] = Array.isArray(body) ? body : (body?.items ?? body?.payload ?? []);
+      return items
+        .map((m) => ({
+          matchId: String(m.matchId ?? m._id?.matchId ?? m.match_id ?? ''),
+          elo: num(m.elo) ?? NaN,
+          delta: num(m.elo_delta),
+          at: num(m.date, m.created_at) ?? 0,
+        }))
+        .filter((m) => m.matchId && Number.isFinite(m.elo))
+        .sort((a, b) => b.at - a.at)
+        .map(({ matchId, elo, delta }) => ({ matchId, elo, delta }));
+    } catch {
+      return [];
+    }
+  }
 }
 
 /**
@@ -161,6 +190,15 @@ export function pickFrameUrl(value: unknown): string {
   const score = ({ key }: { key: string }) =>
     (key.includes('large') ? 2 : 0) + (!key.includes('animated') || /non_?animated|static/.test(key) ? 1 : 0);
   return found.sort((a, b) => score(b) - score(a))[0]?.url ?? '';
+}
+
+function isFinished(m: any): boolean {
+  return !m.status || String(m.status).toUpperCase() === 'FINISHED';
+}
+
+/** Nur Matchmaking zählt, keine Turniere (championship) oder Ligen. */
+function isMatchmaking(m: any): boolean {
+  return !m.competition_type || String(m.competition_type).toLowerCase() === 'matchmaking';
 }
 
 /** Faceit liefert den Endstand als "Team 1 / Team 2". Wir zeigen ihn aus Sicht des Spielers: eigene Runden zuerst. */

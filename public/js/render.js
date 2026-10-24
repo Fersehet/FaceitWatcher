@@ -170,16 +170,23 @@ function widgetContent(widget, style, state) {
       return p ? el('div', { fontWeight: 600 }, String(p.longestStreak)) : null;
     case 'recentResults': {
       if (!p) return null;
+      // Ältere Server liefern noch keine recentMatches: dann Kästen ohne Zahl
+      const recent = state?.recentMatches?.length ? state.recentMatches : p.recentResults.map((result) => ({ result, eloChange: null }));
       const row = el('div', { display: 'flex', gap: `${size * 0.25}px` });
-      for (const r of p.recentResults) {
+      // Im Standard-Layout (x 240, Schrift 14) enden die fünf Kästen genau mit dem Elo-Balken bei x 400
+      const [w, h] = [size * 2.086, size * 1.4];
+      for (const m of recent) {
+        const color = m.result === 'W' ? style.positiveColor : style.negativeColor;
+        // Nur die Zahl ohne Vorzeichen, Sieg/Niederlage zeigt die Farbe. Ohne bekannte Elo-Änderung bleibt der Kasten leer.
+        const text = m.eloChange == null ? '' : String(Math.abs(m.eloChange));
         row.appendChild(
           el(
             'div',
             {
-              width: `${size * 1.4}px`, height: `${size * 1.4}px`, borderRadius: '4px', display: 'grid', placeItems: 'center', fontWeight: 700,
-              background: hexToRgba(r === 'W' ? style.positiveColor : style.negativeColor, 0.25), color: r === 'W' ? style.positiveColor : style.negativeColor,
+              width: `${w}px`, height: `${h}px`, borderRadius: '4px', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: `${size * 0.95}px`, lineHeight: 1,
+              background: hexToRgba(color, 0.25), color,
             },
-            r,
+            text,
           ),
         );
       }
