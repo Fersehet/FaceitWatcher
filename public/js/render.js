@@ -21,6 +21,8 @@ export function hexToRgba(hex, alpha = 1) {
 const loadedFonts = new Set();
 export function loadFont(family) {
   if (SYSTEM_FONTS.includes(family) || loadedFonts.has(family)) return;
+  // Schon per @font-face eingebunden (z. B. lokal auf der Landingpage): nichts nachladen
+  if ([...document.fonts].some((f) => f.family.replace(/["']/g, '') === family)) return;
   loadedFonts.add(family);
   const link = document.createElement('link');
   link.rel = 'stylesheet';
