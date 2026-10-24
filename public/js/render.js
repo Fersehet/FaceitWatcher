@@ -2,7 +2,7 @@
 
 const LEVEL_THRESHOLDS = [0, 501, 751, 901, 1051, 1201, 1351, 1531, 1751, 2001];
 const SYSTEM_FONTS = ['Arial', 'Verdana', 'Tahoma', 'Segoe UI', 'Impact'];
-export const FONTS = ['Play', 'Rajdhani', 'Inter', 'Roboto', 'Montserrat', 'Oswald', 'Bebas Neue', 'Teko', 'Exo 2', ...SYSTEM_FONTS];
+export const FONTS = ['Geist', 'Play', 'Rajdhani', 'Inter', 'Roboto', 'Montserrat', 'Oswald', 'Bebas Neue', 'Teko', 'Exo 2', ...SYSTEM_FONTS];
 
 function levelColor(level) {
   if (level >= 10) return '#fe1f00';
