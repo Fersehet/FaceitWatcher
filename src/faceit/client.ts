@@ -108,7 +108,7 @@ export class FaceitClient implements StatsSource {
         finishedAt: new Date((num(m.finished_at) ?? Date.now() / 1000) * 1000).toISOString(),
         result: String(s['Result']) === '1' ? 'W' : 'L',
         map: String(round.round_stats?.Map ?? ''),
-        score: String(round.round_stats?.Score ?? ''),
+        score: ownScoreFirst(String(round.round_stats?.Score ?? ''), String(s['Result']) === '1'),
         kills: num(s['Kills']) ?? 0,
         deaths: num(s['Deaths']) ?? 0,
         assists: num(s['Assists']) ?? 0,
@@ -149,4 +149,12 @@ function findFrameUrl(value: unknown, insideFrame = false, depth = 0): string | 
     if (nested) return nested;
   }
   return null;
+}
+
+/** Faceit liefert den Endstand als "Team 1 / Team 2". Wir zeigen ihn aus Sicht des Spielers: eigene Runden zuerst. */
+function ownScoreFirst(score: string, won: boolean): string {
+  const rounds = score.split('/').map((p) => Number.parseInt(p.trim(), 10));
+  if (rounds.length !== 2 || rounds.some(Number.isNaN)) return score;
+  const [high, low] = [Math.max(...rounds), Math.min(...rounds)];
+  return won ? `${high} / ${low}` : `${low} / ${high}`;
 }
