@@ -39,7 +39,7 @@ site.get('/live.json', (_req, res) => {
   const overlay = storage.listOverlays(OWNER)[0];
   res.set('Cache-Control', 'no-cache').json({ overlay: overlay ? upgradeOverlay(overlay) : null, state: tracker.state });
 });
-site.use(express.static(fileURLToPath(new URL('../website', import.meta.url))));
+site.use(express.static(config.siteDir));
 if (config.siteHosts.length > 0) {
   app.use((req, res, next) => {
     if (!config.siteHosts.includes(req.hostname.toLowerCase())) return next();
