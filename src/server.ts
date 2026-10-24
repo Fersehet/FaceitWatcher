@@ -182,6 +182,18 @@ app.post('/api/refresh', async (_req, res) => {
   res.json(tracker.state);
 });
 
+app.put('/api/matches/:id/elo', async (req, res) => {
+  const raw = req.body?.elo;
+  const amount = raw === null || raw === '' || raw === undefined ? null : Number(raw);
+  if (amount !== null && (!Number.isInteger(amount) || amount < 0 || amount > 100)) return void res.status(400).json({ error: 'Ungültige Elo' });
+  try {
+    await tracker.setMatchElo(req.params.id, amount);
+    res.json(tracker.state);
+  } catch (err) {
+    res.status(404).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
 app.get('/api/history', (req, res) => {
   const playerId = tracker.state.player?.playerId;
   if (!playerId) return void res.json([]);
