@@ -5,7 +5,7 @@ import { AssetCache, isFaceitUrl } from './assets.ts';
 import { config, demoReason, isDemo } from './config.ts';
 import { FaceitClient } from './faceit/client.ts';
 import { DemoSource } from './faceit/demo.ts';
-import { createDefaultOverlay, upgradeOverlay, WIDGET_LABELS } from './overlays/defaults.ts';
+import { createDefaultOverlay, defaultStyle, defaultWidgets, upgradeOverlay, WIDGET_LABELS } from './overlays/defaults.ts';
 import type { Overlay } from './overlays/types.ts';
 import { SqliteStorage } from './storage/sqlite.ts';
 import { Tracker } from './tracker.ts';
@@ -160,6 +160,16 @@ app.put('/api/overlays/:id', (req, res) => {
     widgets: body.widgets ?? existing.widgets,
     updatedAt: new Date().toISOString(),
   };
+  storage.saveOverlay(overlay);
+  broadcast('overlay', overlay);
+  res.json(overlay);
+});
+
+// Setzt Design und Elemente auf den Standard zurück, Name und OBS-Adresse bleiben
+app.post('/api/overlays/:id/reset', (req, res) => {
+  const existing = storage.getOverlay(req.params.id);
+  if (!existing) return void res.status(404).json({ error: 'Overlay nicht gefunden' });
+  const overlay: Overlay = { ...existing, style: defaultStyle(), widgets: defaultWidgets(), updatedAt: new Date().toISOString() };
   storage.saveOverlay(overlay);
   broadcast('overlay', overlay);
   res.json(overlay);
