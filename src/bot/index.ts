@@ -96,6 +96,7 @@ function sampleMatch(): ServerMatch {
     playerId: 'test',
     nickname: 'FaceitWatcher-Test',
     avatar: '',
+    avatarFrame: '',
     finishedAt: new Date().toISOString(),
     result: 'W',
     map: 'de_mirage',
