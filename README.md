@@ -7,6 +7,26 @@
 
 Eigene Faceit-Overlays (Elo, Level, K/D, Session-Stats, …) für OBS bauen und selbst hosten. Der Server fragt Faceit ab und speichert deine Statistiken, im Editor gestaltest du das Overlay, OBS zeigt es als Browserquelle.
 
+<p align="center">
+  <img src="docs/screenshots/overlay.png" alt="Fertiges Overlay, wie es in OBS erscheint" width="420">
+</p>
+
+## So sieht es aus
+
+**Editor:** Overlay live gestalten, Elemente per Drag & Drop verschieben, OBS-Link kopieren.
+
+![Editor mit Overlay-Vorschau](docs/screenshots/editor.png)
+
+**Stats an- und abwählen:** Jede Kennzahl lässt sich einzeln ein- und ausblenden, Reihenfolge, Schrift und Farben stellst du unter **Design** ein.
+
+![Editor mit Stats-Auswahl](docs/screenshots/editor-anpassen.png)
+
+**Statistiken:** Elo-Verlauf der letzten 20 Matches, aktuelle Season und alle Faceit-Level im Überblick.
+
+![Statistik-Ansicht mit Elo-Verlauf und Season](docs/screenshots/statistiken.png)
+
+Alle Screenshots zeigen den Demo-Modus mit Beispieldaten.
+
 ## Voraussetzungen
 
 - [Node.js](https://nodejs.org) 22.13 oder neuer
