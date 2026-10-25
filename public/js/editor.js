@@ -278,6 +278,12 @@ function renderWidgetList() {
         name.textContent = widgetName(v) || w.type;
         changed();
       }), 'full'),
+      ...(w.type === 'seasonWinRate'
+        ? [field(t('altLabel'), input('text', w.altLabel ?? '', (v) => {
+            w.altLabel = v;
+            changed();
+          }), 'full')]
+        : []),
       field(t('showLabel'), input('checkbox', w.showLabel, (v) => {
         w.showLabel = v;
         changed();
@@ -321,6 +327,8 @@ const STYLE_FIELDS = [
   ['negativeColor', 'negativeColor', 'color'],
   ['levelIcon', 'levelIcon', 'select', { options: [['badge', 'levelBadge'], ['official', 'levelOfficial']] }],
   ['showAvatarFrame', 'showFrame', 'checkbox'],
+  ['statsPeriod', 'statsPeriod', 'select', { options: [['cycle', 'statsCycle'], ['season', 'statsSeason'], ['alltime', 'statsAllTime']] }],
+  ['statsCycleSeconds', 'statsCycleSeconds', 'number', { min: 3, max: 600 }],
 ];
 
 function renderStyleForm() {
@@ -329,8 +337,10 @@ function renderStyleForm() {
   for (const [key, labelKey, type, attrs] of STYLE_FIELDS) {
     const label = t(labelKey);
     const set = (v) => {
-      overlay.style[key] = v;
+      overlay.style[key] = key === 'statsCycleSeconds' ? Math.max(3, v || 10) : v;
       changed();
+      // Die Sekunden gelten nur beim Wechseln
+      if (key === 'statsPeriod') renderStyleForm();
     };
     if (type === 'font' || type === 'select') {
       const options = type === 'font' ? FONTS.map((f) => [f, f]) : attrs.options.map(([value, key]) => [value, t(key)]);
@@ -341,7 +351,9 @@ function renderStyleForm() {
     } else if (type === 'checkbox') {
       form.appendChild(field(label, input('checkbox', !!overlay.style[key], set)));
     } else {
-      form.appendChild(field(label, input(type, overlay.style[key], set, attrs)));
+      const node = input(type, overlay.style[key], set, attrs);
+      if (key === 'statsCycleSeconds') node.disabled = (overlay.style.statsPeriod ?? 'cycle') !== 'cycle';
+      form.appendChild(field(label, node));
     }
   }
 }
