@@ -154,7 +154,6 @@ body > main { flex: 1; height: auto; min-height: 0; }
 .stats-view .panel-head > span { font: 500 12px/1 var(--mono); color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
 .stats-view .panel-head b { font: 700 28px/1 var(--mono); font-variant-numeric: tabular-nums; }
 .stats-view .panel-head small { font-size: 14px; }
-.stats-view .live-dot::before { content: '● '; }
 .stats-view .up { color: var(--up); }
 .stats-view .down { color: var(--down); }
 .stats-view .chart { width: 100%; height: auto; display: block; margin-bottom: 16px; overflow: visible; }

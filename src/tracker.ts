@@ -55,7 +55,18 @@ export interface StatsOverview {
   peak: number;
   low: number;
   avgPerMatch: number;
-  session: (SessionStats & { kd: number | null; bestMap: string | null }) | null;
+  season:
+    | (SeasonStats & {
+        /** Elo-Änderung seit dem ersten gespeicherten Stand in der Season, null = noch keiner */
+        eloChange: number | null;
+        /** Ab hier gibt es eigene Daten (erster Stand in der Season), z. B. später als der Season-Start */
+        trackedSince: string | null;
+        /** Gespeicherte Matches in der Season, Grundlage für K/D und beste Map */
+        trackedMatches: number;
+        kd: number | null;
+        bestMap: string | null;
+      })
+    | null;
 }
 
 export interface LiveState {
@@ -207,13 +218,13 @@ export class Tracker extends EventEmitter {
     };
   }
 
-  /** Nur Matchmaking zählt: die gespeicherten (bereits gefilterten) Matches seit Session-Start */
-  private sessionMatches(playerId: string, since: string): MatchResult[] {
-    return [...this.storage.listMatches(playerId, 200), ...this.pending.map((p) => p.match)].filter((m) => m.finishedAt >= since);
+  /** Nur Matchmaking zählt: die gespeicherten (bereits gefilterten) Matches seit `since` */
+  private sessionMatches(playerId: string, since: string, limit = 200): MatchResult[] {
+    return [...this.storage.listMatches(playerId, limit), ...this.pending.map((p) => p.match)].filter((m) => m.finishedAt >= since);
   }
 
   /**
-   * Elo-Verlauf der letzten `count` Matches und Kennzahlen der Session für den Statistik-Tab.
+   * Elo-Verlauf der letzten `count` Matches und Kennzahlen der Season für den Statistik-Tab.
    * Der Verlauf wird vom aktuellen Elo-Stand rückwärts über die Elo-Änderungen der Matches berechnet;
    * fehlt eine Änderung, wird sie wie bei "Letzte Matches" geschätzt.
    */
@@ -234,9 +245,13 @@ export class Tracker extends EventEmitter {
     const values = points.map((p) => p.elo);
     const next = LEVEL_THRESHOLDS.find((min) => min > player.elo);
 
-    let session: StatsOverview['session'] = null;
-    if (this.state.session) {
-      const played = this.sessionMatches(player.playerId, this.state.session.startedAt);
+    // Season: Siege/Niederlagen zählt Faceit (alle Matchmaking-Matches seit Season-Start),
+    // Elo, K/D und beste Map kommen aus den eigenen gespeicherten Daten seit Season-Start
+    let season: StatsOverview['season'] = null;
+    if (this.state.season) {
+      const since = new Date(this.state.season.start).toISOString();
+      const first = this.storage.eloHistory(player.playerId, since)[0];
+      const played = this.sessionMatches(player.playerId, since, 5000);
       const kills = played.reduce((sum, m) => sum + m.kills, 0);
       const deaths = played.reduce((sum, m) => sum + m.deaths, 0);
       // Beste Map: höchste Bilanz (Siege minus Niederlagen), bei Gleichstand mehr Siege; ohne Sieg keine
@@ -248,8 +263,11 @@ export class Tracker extends EventEmitter {
         maps.set(m.map, r);
       }
       const best = [...maps].filter(([, r]) => r.wins > 0).sort(([, a], [, b]) => b.wins - b.losses - (a.wins - a.losses) || b.wins - a.wins)[0];
-      session = {
-        ...this.state.session,
+      season = {
+        ...this.state.season,
+        eloChange: first ? player.elo - first.elo : null,
+        trackedSince: first?.takenAt ?? null,
+        trackedMatches: played.length,
         kd: played.length ? Math.round((kills / Math.max(1, deaths)) * 100) / 100 : null,
         bestMap: best ? best[0] : null,
       };
@@ -265,7 +283,7 @@ export class Tracker extends EventEmitter {
       peak: Math.max(...values),
       low: Math.min(...values),
       avgPerMatch: matches ? Math.round((change / matches) * 10) / 10 : 0,
-      session,
+      season,
     };
   }
 
