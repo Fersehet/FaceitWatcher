@@ -57,6 +57,7 @@ function isPublic(req: express.Request) {
   if (req.method !== 'GET' && req.method !== 'HEAD') return false;
   return (
     req.path.startsWith('/assets/') ||
+    req.path.startsWith('/fonts/') ||
     /^\/overlay\/[\w-]+$/.test(req.path) ||
     /^\/api\/overlays\/[\w-]+$/.test(req.path) ||
     [
