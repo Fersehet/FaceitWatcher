@@ -1,5 +1,5 @@
 import { FONTS, renderOverlay } from './render.js';
-import { createLoader } from './loader.js';
+import { createIntro, createLoader } from './loader.js';
 import { initLangSelect, locale, t, widgetName } from './i18n.js';
 import { loadStats, renderStats } from './stats.js';
 
@@ -469,14 +469,16 @@ setTab(location.hash === '#stats' ? 'stats' : 'overlay');
 // ---------- Start ----------
 
 async function init() {
-  const pageLoader = createLoader(document.body, { fixed: true });
+  const intro = createIntro($('intro'));
   const previewLoader = createLoader(document.querySelector('.preview-area'));
   // Änderungen, die vom Server geladen werden, zeigen den Ladebildschirm über der Vorschau
   const busy = (task) => previewLoader.wrap(task);
 
-  await pageLoader.wrap(async () => {
+  await intro.wrap(async () => {
     state = await api('GET', '/api/state');
+    intro.progress(0.7);
     overlays = await api('GET', '/api/overlays');
+    intro.progress(0.85);
     renderStatus();
 
     const remembered = localStorage.getItem('fw-overlay');
