@@ -25,7 +25,7 @@ Build your own Faceit overlays (Elo, level, K/D, session stats, …) for OBS and
 
 ![Statistics view with Elo history and season](docs/screenshots/stats.png)
 
-All screenshots show demo mode with sample data. The editor is available in English, German, Russian and French.
+The screenshots use the stats of donk (Faceit donk666, as of Oct 25, 2026), played back in demo mode. The editor is available in English, German, Russian and French.
 
 ## Requirements
 
