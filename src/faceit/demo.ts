@@ -42,7 +42,7 @@ export class DemoSource implements StatsSource {
 
   async fetchRecordSince(): Promise<MatchRecord> {
     // Demo: die Season begann vor 40 Matches mit 22 Siegen Rückstand zum Lifetime-Stand
-    return { matches: this.matches - 602, wins: this.wins - 329 };
+    return { matches: this.matches - 602, wins: this.wins - 329, kd: 1.24, hsPercent: 51, adr: 85.7 };
   }
 
   async fetchRecentMatches(_playerId: string, count: number, isKnown: (matchId: string) => boolean): Promise<MatchDetails[]> {

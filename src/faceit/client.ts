@@ -68,6 +68,7 @@ export class FaceitClient implements StatsSource {
     const pageSize = 100;
     let matches = 0;
     let wins = 0;
+    const ids = new Set<string>();
     // Höchstens 20 Seiten (2000 Matches), damit das Rate-Limit nicht gesprengt wird
     for (let offset = 0; offset < 2000; offset += pageSize) {
       const page = await this.get<any>(
@@ -83,10 +84,52 @@ export class FaceitClient implements StatsSource {
         if (!winner || !team) continue;
         matches += 1;
         if (team === winner) wins += 1;
+        ids.add(m.match_id);
       }
       if (items.length < pageSize) break;
     }
-    return { matches, wins };
+    return { matches, wins, ...(await this.statsOf(playerId, ids)) };
+  }
+
+  /**
+   * K/D, HS % und ADR über genau diese Matches. Die Stats pro Match kommen seitenweise (neueste zuerst)
+   * von /players/{id}/games/cs2/stats; gezählt werden nur die übergebenen Matchmaking-Matches.
+   */
+  private async statsOf(playerId: string, ids: Set<string>): Promise<Pick<MatchRecord, 'kd' | 'hsPercent' | 'adr'>> {
+    const none = { kd: null, hsPercent: null, adr: null };
+    if (!ids.size) return none;
+    const pageSize = 100;
+    let kills = 0, deaths = 0, hsSum = 0, adrSum = 0, adrWeight = 0, found = 0;
+    try {
+      for (let offset = 0; offset < 2000 && found < ids.size; offset += pageSize) {
+        const page = await this.get<any>(`/players/${playerId}/games/${GAME}/stats?offset=${offset}&limit=${pageSize}`);
+        const items: any[] = page.items ?? [];
+        for (const item of items) {
+          const s = item.stats ?? item;
+          if (!ids.has(String(s['Match Id'] ?? ''))) continue;
+          found += 1;
+          kills += num(s['Kills']) ?? 0;
+          deaths += num(s['Deaths']) ?? 0;
+          hsSum += num(s['Headshots %']) ?? 0;
+          const adr = num(s['ADR']);
+          if (adr !== null) {
+            // ADR nach Runden gewichtet, damit kurze Matches nicht genauso zählen wie lange
+            const rounds = num(s['Rounds']) ?? 1;
+            adrSum += adr * rounds;
+            adrWeight += rounds;
+          }
+        }
+        if (items.length < pageSize) break;
+      }
+    } catch {
+      return none;
+    }
+    if (!found) return none;
+    return {
+      kd: Math.round((kills / Math.max(1, deaths)) * 100) / 100,
+      hsPercent: Math.round(hsSum / found),
+      adr: adrWeight ? Math.round((adrSum / adrWeight) * 10) / 10 : null,
+    };
   }
 
   async fetchRecentMatches(playerId: string, count: number, isKnown: (matchId: string) => boolean): Promise<MatchDetails[]> {

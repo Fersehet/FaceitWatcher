@@ -30,6 +30,8 @@ export interface Widget {
   color: string;
   label: string;
   showLabel: boolean;
+  /** Beschriftung, solange die All-Time-Werte zu sehen sind (nur Season WR) */
+  altLabel?: string;
   /** Vom Server gesetzt: der Editor soll das Widget auf einen freien Platz schieben. */
   autoPlace?: boolean;
 }
@@ -51,6 +53,10 @@ export interface OverlayStyle {
   /** badge = eingebauter Nachbau im Faceit-Stil, official = Originaldatei vom Faceit-CDN */
   levelIcon: 'official' | 'badge';
   showAvatarFrame: boolean;
+  /** Season WR, K/D, HS %, ADR und Matches: cycle = abwechselnd Season und All-Time, sonst fest */
+  statsPeriod: 'cycle' | 'season' | 'alltime';
+  /** Sekunden bis zum nächsten Wechsel bei cycle */
+  statsCycleSeconds: number;
 }
 
 export interface Overlay {
