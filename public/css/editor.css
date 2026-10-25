@@ -275,3 +275,26 @@ body > main { flex: 1; height: auto; min-height: 0; }
   #startPage { display: none; }
   .head-btn { padding: 9px 10px; }
 }
+
+/* Ansichten-Leiste rechts wie auf der Website; ersetzt dort die Tabs in der Kopfzeile */
+.rail { position: fixed; right: max(18px, env(safe-area-inset-right, 0px)); top: 50%; z-index: 15; display: none; gap: 22px; transform: translate(0, -50%); }
+.rail-track { position: absolute; right: 5px; top: 9px; bottom: 9px; width: 2px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.rail-track i { position: absolute; inset: 0; background: var(--accent); box-shadow: 0 0 8px var(--glow); transform-origin: top; transform: scaleY(var(--fill, 0)); transition: transform .5s cubic-bezier(.5, 0, .2, 1); }
+.rail a { position: relative; display: flex; align-items: center; justify-content: flex-end; gap: 12px; height: 18px; text-decoration: none; color: var(--muted); font: 600 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; }
+.rail a::after { content: ''; width: 12px; height: 12px; flex: none; border-radius: 50%; background: var(--bg); border: 2px solid var(--border); box-sizing: border-box; transition: transform .3s cubic-bezier(.3, 1.6, .5, 1), background .3s, border-color .3s, box-shadow .3s; }
+.rail a.passed::after { border-color: var(--accent); }
+.rail a.active::after { background: var(--accent); border-color: var(--accent); transform: scale(1.35); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent), 0 0 14px var(--glow); }
+.rail span { padding: 5px 8px; border-radius: 5px; background: color-mix(in srgb, var(--bg) 85%, transparent); border: 1px solid var(--border); backdrop-filter: blur(6px); opacity: 0; transform: translateX(8px); transition: opacity .25s, transform .25s, color .25s; pointer-events: none; white-space: nowrap; }
+.rail span b { color: var(--accent); margin-right: 6px; font-weight: 700; }
+.rail span em { font-style: normal; }
+.rail a:hover span, .rail a:focus-visible span, .rail a.active span, .rail:hover a span { opacity: 1; transform: none; }
+.rail a.active span { color: var(--text); }
+@media (min-width: 1100px) {
+  .rail { display: grid; }
+  .tabs { visibility: hidden; }
+  /* Platz für die Leiste lassen, damit sie nichts verdeckt */
+  .preview-area { padding-right: 180px; }
+  .overlay-picker { right: 180px; }
+}
+@media (min-width: 1100px) and (max-width: 1500px) { .stats-view { padding-left: 180px; padding-right: 180px; } }
+@media (prefers-reduced-motion: reduce) { .rail-track i { transition: none; } }
