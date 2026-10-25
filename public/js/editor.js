@@ -46,7 +46,7 @@ function drawPreview() {
   const preview = $('preview');
   const area = document.querySelector('.preview-area');
   const { width, height } = overlay.style;
-  scale = Math.min(2, (area.clientWidth - 100) / width, (area.clientHeight - 120) / height);
+  scale = Math.min(2, (area.clientWidth - 100) / width, (area.clientHeight - 168) / height);
   scale = Math.max(0.2, scale);
   preview.style.transform = `scale(${scale})`;
   preview.style.marginRight = `${width * (scale - 1)}px`;
@@ -398,6 +398,7 @@ function renderStatus() {
     status.className = 'status live';
     status.textContent = state?.player ? t('live', { n: state.player.nickname }) : t('connecting');
   }
+  status.title = status.textContent;
   if (document.activeElement !== $('nickname')) $('nickname').value = state?.nickname ?? '';
   if (document.activeElement !== $('frameUrl')) $('frameUrl').value = state?.avatarFrameOverride ?? '';
   $('frameInfo').textContent = state?.avatarFrameOverride
@@ -429,7 +430,7 @@ function renderRecentElo() {
     const li = document.createElement('li');
     const res = Object.assign(document.createElement('span'), { className: `res ${m.result}`, textContent: m.result });
     const date = m.finishedAt ? new Date(m.finishedAt).toLocaleString(locale(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-    const info = Object.assign(document.createElement('span'), { className: 'info', textContent: [m.mvp ? '👑' : '', m.map.replace(/^de_/, ''), date].filter(Boolean).join(' · ') });
+    const info = Object.assign(document.createElement('span'), { className: 'info', textContent: [m.map.replace(/^de_/, ''), date].join(' · ') + (m.mvp ? ' 👑' : '') });
     const amount = m.eloChange == null ? '' : String(Math.abs(m.eloChange));
     const field = Object.assign(document.createElement('input'), { type: 'number', min: 0, max: 100, step: 1 });
     // Geschätzt: nur als Platzhalter zeigen, damit klar ist, dass noch nichts eingetragen wurde
