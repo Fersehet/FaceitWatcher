@@ -46,7 +46,9 @@ function drawPreview() {
   const preview = $('preview');
   const area = document.querySelector('.preview-area');
   const { width, height } = overlay.style;
-  scale = Math.min(2, (area.clientWidth - 100) / width, (area.clientHeight - 168) / height);
+  const pad = getComputedStyle(area);
+  const freeWidth = area.clientWidth - parseFloat(pad.paddingLeft) - parseFloat(pad.paddingRight) - 52;
+  scale = Math.min(2, freeWidth / width, (area.clientHeight - 168) / height);
   scale = Math.max(0.2, scale);
   preview.style.transform = `scale(${scale})`;
   preview.style.marginRight = `${width * (scale - 1)}px`;
@@ -452,20 +454,72 @@ function renderRecentElo() {
 // ---------- Tabs ----------
 
 let tab = 'overlay';
+const VIEWS = ['overlay', 'stats'];
+const viewOf = (name) => $(name === 'stats' ? 'statsView' : 'overlayView');
+let switching = null;
 
-function setTab(next) {
+// Wechsel wie ein Scroll auf der Website: alte Ansicht gleitet nach oben weg, neue kommt von unten (rückwärts umgekehrt)
+function slide(from, to) {
+  const dir = VIEWS.indexOf(to) > VIEWS.indexOf(from) ? 1 : -1;
+  const out = viewOf(from);
+  const into = viewOf(to);
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  switching?.cancel();
+  if (reduced || !out.animate) {
+    out.hidden = true;
+    showView(into);
+    return;
+  }
+  const ease = 'cubic-bezier(.5, 0, .2, 1)';
+  const anim = out.animate(
+    [{ transform: 'none', opacity: 1, filter: 'blur(0)' }, { transform: `translateY(${-dir * 60}px)`, opacity: 0, filter: 'blur(4px)' }],
+    { duration: 220, easing: ease },
+  );
+  switching = anim;
+  anim.finished.then(() => {
+    out.hidden = true;
+    showView(into);
+    switching = into.animate(
+      [{ transform: `translateY(${dir * 80}px)`, opacity: 0, filter: 'blur(4px)' }, { transform: 'none', opacity: 1, filter: 'blur(0)' }],
+      { duration: 380, easing: 'cubic-bezier(.2, .8, .3, 1)' },
+    );
+  }, () => {});
+}
+
+function setTab(next, animate = true) {
+  const prev = tab;
   tab = next === 'stats' ? 'stats' : 'overlay';
   for (const button of document.querySelectorAll('.tabs [data-tab]')) button.setAttribute('aria-selected', String(button.dataset.tab === tab));
-  $('overlayView').hidden = tab !== 'overlay';
-  $('statsView').hidden = tab !== 'stats';
+  for (const link of document.querySelectorAll('.rail [data-tab]')) {
+    link.classList.toggle('active', link.dataset.tab === tab);
+    link.classList.toggle('passed', VIEWS.indexOf(link.dataset.tab) < VIEWS.indexOf(tab));
+    link.toggleAttribute('aria-current', link.dataset.tab === tab);
+  }
+  $('rail').style.setProperty('--fill', String(VIEWS.indexOf(tab) / (VIEWS.length - 1)));
+  if (animate && prev !== tab) slide(prev, tab);
+  else {
+    viewOf(tab === 'stats' ? 'overlay' : 'stats').hidden = true;
+    showView(viewOf(tab));
+  }
   document.body.classList.toggle('tab-stats', tab === 'stats');
   history.replaceState(null, '', tab === 'stats' ? '#stats' : location.pathname + location.search);
   if (tab === 'stats') loadStats();
-  else if (overlay) drawPreview();
+}
+
+// Die Vorschau misst ihre Fläche, also erst zeichnen, wenn die Overlay-Ansicht sichtbar ist
+function showView(view) {
+  view.hidden = false;
+  if (view.id === 'overlayView' && overlay) drawPreview();
 }
 
 for (const button of document.querySelectorAll('.tabs [data-tab]')) button.addEventListener('click', () => setTab(button.dataset.tab));
-setTab(location.hash === '#stats' ? 'stats' : 'overlay');
+for (const link of document.querySelectorAll('.rail [data-tab]')) {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    setTab(link.dataset.tab);
+  });
+}
+setTab(location.hash === '#stats' ? 'stats' : 'overlay', false);
 
 // ---------- Start ----------
 
