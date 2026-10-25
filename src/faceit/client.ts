@@ -117,10 +117,17 @@ export class FaceitClient implements StatsSource {
         adr: num(s['ADR']),
         hsPercent: num(s['Headshots %']) ?? 0,
         mvps: num(s['MVPs']),
+        matchMvp: isTopFragger(players, playerId),
         url: String(m.faceit_url ?? '').replace('{lang}', 'de'),
       });
     }
     return results;
+  }
+
+  async fetchMatchMvp(matchId: string, playerId: string): Promise<boolean | null> {
+    const stats = await this.get<any>(`/matches/${matchId}/stats`);
+    const players = (stats.rounds?.[0]?.teams ?? []).flatMap((t: any) => t.players ?? []);
+    return players.some((p: any) => p.player_id === playerId) ? isTopFragger(players, playerId) : null;
   }
 
   /**
@@ -190,6 +197,13 @@ export function pickFrameUrl(value: unknown): string {
   const score = ({ key }: { key: string }) =>
     (key.includes('large') ? 2 : 0) + (!key.includes('animated') || /non_?animated|static/.test(key) ? 1 : 0);
   return found.sort((a, b) => score(b) - score(a))[0]?.url ?? '';
+}
+
+/** Match-MVP: meiste Kills aller Spieler im Match, Gleichstand zählt mit. */
+function isTopFragger(players: any[], playerId: string): boolean {
+  const kills = (p: any) => num(p.player_stats?.['Kills']) ?? 0;
+  const me = players.find((p) => p.player_id === playerId);
+  return !!me && players.every((p) => kills(p) <= kills(me));
 }
 
 function isFinished(m: any): boolean {

@@ -340,6 +340,26 @@ export class Tracker extends EventEmitter {
     }
   }
 
+  /** Matches, bei denen die MVP-Abfrage schon einmal fehlgeschlagen ist (nicht bei jedem Abruf erneut fragen). */
+  private mvpTried = new Set<string>();
+
+  /** Ältere gespeicherte Matches kennen den Match-MVP noch nicht: einmalig bei Faceit nachsehen und speichern. */
+  private async fillMatchMvp(matches: MatchResult[]) {
+    if (!this.source.fetchMatchMvp) return;
+    for (const m of matches) {
+      if (m.matchMvp !== undefined || this.mvpTried.has(m.matchId)) continue;
+      this.mvpTried.add(m.matchId);
+      try {
+        const mvp = await this.source.fetchMatchMvp(m.matchId, m.playerId);
+        if (mvp === null) continue;
+        m.matchMvp = mvp;
+        this.storage.saveMatch(m);
+      } catch (err) {
+        console.error('Match-MVP konnte nicht geladen werden:', err instanceof Error ? err.message : err);
+      }
+    }
+  }
+
   /** Durchschnittliche Elo-Änderung der gemessenen Matches, als Schätzwert für Matches ohne Elo. */
   private typicalElo(playerId: string): number {
     const exact = this.storage.listMatches(playerId, 20).filter((m) => m.eloChange !== null && !m.eloEstimated);
@@ -422,17 +442,19 @@ export class Tracker extends EventEmitter {
     }
     // Matches ohne Elo (z. B. vor dem ersten Start gespielt) bekommen einen Schätzwert
     const typical = this.typicalElo(player.playerId);
-    const recent: RecentMatch[] = stored.map(({ matchId, result, eloChange, eloEstimated, map, finishedAt }) => ({
+    await this.fillMatchMvp(stored);
+    const recent: RecentMatch[] = stored.map(({ matchId, result, eloChange, eloEstimated, matchMvp, map, finishedAt }) => ({
       matchId,
       result,
       eloChange: eloChange ?? (result === 'W' ? typical : -typical),
       estimated: eloChange === null || !!eloEstimated,
+      mvp: !!matchMvp,
       map,
       finishedAt,
     }));
     // Noch nicht genug gespeicherte Matches (z. B. Demo-Modus): Rest ohne Elo aus Faceits Ergebnissen auffüllen
     const faceitNewestFirst = this.newestFirst ? player.recentResults : [...player.recentResults].reverse();
-    for (const result of faceitNewestFirst.slice(recent.length)) recent.push({ matchId: '', result, eloChange: result === 'W' ? typical : -typical, estimated: true, map: '', finishedAt: '' });
+    for (const result of faceitNewestFirst.slice(recent.length)) recent.push({ matchId: '', result, eloChange: result === 'W' ? typical : -typical, estimated: true, mvp: false, map: '', finishedAt: '' });
     // Im Overlay immer neuestes Match links, dann nach rechts immer älter
     return recent;
   }
