@@ -31,25 +31,19 @@
       </div>
     </div>
     <header>
-      <div class="brand"><img class="brand-mark" src="/logo.svg" alt="" width="28" height="28" /><b>Faceit<span>Watcher</span></b></div>
+      <div class="head-left">
+        <div class="brand"><img class="brand-mark" src="/logo.svg" alt="" width="28" height="28" /><b>Faceit<span>Watcher</span></b></div>
+        <div id="status" class="status"></div>
+      </div>
       <nav class="tabs" role="tablist">
         <button id="tabOverlay" role="tab" data-tab="overlay" data-i18n="tabOverlay">Overlay</button>
         <button id="tabStats" role="tab" data-tab="stats" data-i18n="tabStats">Statistiken</button>
       </nav>
-      <div id="status" class="status"></div>
-      <div class="overlay-picker">
-        <select id="overlaySelect" aria-label="Overlay auswählen" data-i18n-aria-label="selectOverlay"></select>
-        <input id="overlayName" aria-label="Name des Overlays" data-i18n-aria-label="overlayName" />
-        <button id="newOverlay" data-i18n="new">Neu</button>
-        <button id="copyOverlay" data-i18n="duplicate">Duplizieren</button>
-        <button id="resetOverlay" title="Positionen, Stats und Design auf den Standard zurücksetzen" data-i18n-title="resetTitle" data-i18n="reset">Zurücksetzen</button>
-        <button id="deleteOverlay" class="danger" data-i18n="delete">Löschen</button>
-      </div>
       <div class="account">
         <select id="langSel" class="lang" aria-label="Sprache" data-i18n-aria-label="langLabel"></select>
         <span id="accountName"></span>
-        <a id="startPage" href="/" data-i18n="website" hidden>Website</a>
-        <button id="logout" data-i18n="logout">Abmelden</button>
+        <a id="startPage" class="head-link" href="/" data-i18n="website" hidden>Website</a>
+        <button id="logout" class="head-btn" data-i18n="logout">Abmelden</button>
       </div>
     </header>
 
@@ -109,6 +103,15 @@
       </aside>
 
       <div class="preview-area">
+        <div class="overlay-picker" role="group" aria-label="Overlay">
+          <select id="overlaySelect" aria-label="Overlay auswählen" data-i18n-aria-label="selectOverlay"></select>
+          <input id="overlayName" aria-label="Name des Overlays" data-i18n-aria-label="overlayName" />
+          <span class="picker-sep" aria-hidden="true"></span>
+          <button id="newOverlay" class="icon-btn" title="Neu" aria-label="Neu" data-i18n-title="new" data-i18n-aria-label="new"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button id="copyOverlay" class="icon-btn" title="Duplizieren" aria-label="Duplizieren" data-i18n-title="duplicate" data-i18n-aria-label="duplicate"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></svg></button>
+          <button id="resetOverlay" class="icon-btn" title="Positionen, Stats und Design auf den Standard zurücksetzen" aria-label="Zurücksetzen" data-i18n-title="resetTitle" data-i18n-aria-label="reset"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v5h5"/></svg></button>
+          <button id="deleteOverlay" class="icon-btn danger" title="Löschen" aria-label="Löschen" data-i18n-title="delete" data-i18n-aria-label="delete"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>
+        </div>
         <div id="previewWrap" class="checker">
           <div id="preview"></div>
         </div>
