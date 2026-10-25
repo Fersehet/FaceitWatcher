@@ -88,6 +88,7 @@ export class DemoSource implements StatsSource {
       adr: Math.round((60 + Math.random() * 50) * 10) / 10,
       hsPercent: 30 + Math.floor(Math.random() * 35),
       mvps: Math.floor(Math.random() * 6),
+      matchMvp: Math.random() < 0.3,
       url: `https://www.faceit.com/de/cs2/room/${id}`,
     });
     this.played = this.played.slice(0, 20);
