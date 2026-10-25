@@ -133,7 +133,8 @@ function renderSeason() {
   else if (s) {
     // Eigene Daten erst ab dem ersten gespeicherten Stand, z. B. wenn FaceitWatcher nach Season-Start eingerichtet wurde
     const late = s.trackedSince && s.trackedSince.slice(0, 10) > s.start;
-    note = t(late ? 'seasonNoteLate' : 'seasonNote', { n: s.trackedMatches, d: late ? shortDate(s.trackedSince) : '' });
+    const key = (late ? 'seasonNoteLate' : 'seasonNote') + (s.statsFromFaceit ? 'Faceit' : '');
+    note = t(key, { n: s.trackedMatches, d: late ? shortDate(s.trackedSince) : '' });
   }
   $('seasonNote').textContent = note;
 }

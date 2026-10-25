@@ -77,9 +77,42 @@ function signed(n) {
   return n > 0 ? `+${n}` : String(n);
 }
 
-/** Baut den Inhalt eines einzelnen Widgets. Gibt null zurück, wenn (noch) keine Daten da sind. */
-function widgetContent(widget, style, state) {
+/** Diese Stats wechseln zwischen Season und All-Time. */
+const PERIOD_WIDGETS = new Set(['seasonWinRate', 'kd', 'hsPercent', 'adr', 'matches']);
+
+/**
+ * Welche Werte gerade zu sehen sind: 'season' oder 'alltime'. Beim Wechseln hängt die Phase nur an der Uhrzeit,
+ * so zeigen OBS und Editor-Vorschau immer dasselbe. Ohne Season-Daten (kein Season-Start) immer All-Time.
+ */
+export function statsPeriod(style, state, now = Date.now()) {
+  if (!state?.season) return 'alltime';
+  const mode = style.statsPeriod ?? 'cycle';
+  if (mode !== 'cycle') return mode;
+  return Math.floor(now / cycleMs(style)) % 2 === 0 ? 'season' : 'alltime';
+}
+
+function cycleMs(style) {
+  return Math.max(3, Number(style.statsCycleSeconds) || 10) * 1000;
+}
+
+/** Season- oder All-Time-Werte für die wechselnden Stats. */
+function periodValues(state, period) {
   const p = state?.player;
+  const season = state?.season;
+  if (period === 'season' && season) {
+    return { matches: season.matches, winRate: season.winRate, kd: season.kd ?? null, hsPercent: season.hsPercent ?? null, adr: season.adr ?? null };
+  }
+  return p ? { matches: p.matches, winRate: p.winRate, kd: p.kd, hsPercent: p.hsPercent, adr: p.adr } : null;
+}
+
+function widgetLabel(widget, period) {
+  return widget.type === 'seasonWinRate' && period === 'alltime' && widget.altLabel ? widget.altLabel : widget.label;
+}
+
+/** Baut den Inhalt eines einzelnen Widgets. Gibt null zurück, wenn (noch) keine Daten da sind. */
+function widgetContent(widget, style, state, period = 'alltime') {
+  const p = state?.player;
+  const v = PERIOD_WIDGETS.has(widget.type) ? periodValues(state, period) : null;
   const s = state?.session;
   const size = widget.fontSize;
   const color = widget.color || style.textColor;
@@ -157,17 +190,17 @@ function widgetContent(widget, style, state) {
       return wrap;
     }
     case 'matches':
-      return p ? el('div', { fontWeight: 600 }, String(p.matches)) : null;
+      return v ? el('div', { fontWeight: 600 }, String(v.matches)) : null;
     case 'winRate':
       return p ? el('div', { fontWeight: 600 }, `${p.winRate}%`) : null;
     case 'seasonWinRate':
-      return state?.season ? el('div', { fontWeight: 600 }, `${state.season.winRate}%`) : null;
+      return v ? el('div', { fontWeight: 600 }, `${v.winRate}%`) : null;
     case 'kd':
-      return p ? el('div', { fontWeight: 600 }, p.kd.toFixed(2)) : null;
+      return v ? el('div', { fontWeight: 600 }, v.kd == null ? '–' : v.kd.toFixed(2)) : null;
     case 'hsPercent':
-      return p ? el('div', { fontWeight: 600 }, `${p.hsPercent}%`) : null;
+      return v ? el('div', { fontWeight: 600 }, v.hsPercent == null ? '–' : `${v.hsPercent}%`) : null;
     case 'adr':
-      return p ? el('div', { fontWeight: 600 }, p.adr == null ? '–' : p.adr.toFixed(1)) : null;
+      return v ? el('div', { fontWeight: 600 }, v.adr == null ? '–' : v.adr.toFixed(1)) : null;
     case 'currentStreak':
       return p ? el('div', { fontWeight: 600 }, String(p.currentStreak)) : null;
     case 'longestStreak':
@@ -203,13 +236,69 @@ function widgetContent(widget, style, state) {
   }
 }
 
+const EASE = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+
+/**
+ * Wechsel Season ↔ All-Time: Der alte Wert rollt nach oben weg, der neue kommt von unten nach,
+ * von links nach rechts leicht versetzt. Die Beschriftung blendet über.
+ */
+function rollIn(slot, before, index, accent) {
+  const delay = index * 70;
+  const box = el('div', { position: 'relative', overflow: 'hidden', paddingBottom: '0.08em', marginBottom: '-0.08em' });
+  const current = slot.firstChild;
+  box.appendChild(current);
+  const old = el('div', { position: 'absolute', left: 0, top: 0, pointerEvents: 'none' });
+  old.appendChild(before);
+  box.appendChild(old);
+  slot.appendChild(box);
+  const timing = { duration: 520, delay, easing: EASE, fill: 'both' };
+  old.animate([{ transform: 'translateY(0)', opacity: 1, filter: 'blur(0)' }, { transform: 'translateY(-90%)', opacity: 0, filter: 'blur(3px)' }], timing);
+  current.animate(
+    [
+      { transform: 'translateY(90%)', opacity: 0, filter: 'blur(3px)', textShadow: `0 0 0 ${accent}` },
+      { transform: 'translateY(0)', opacity: 1, filter: 'blur(0)', textShadow: `0 0 12px ${accent}`, offset: 0.7 },
+      { transform: 'translateY(0)', opacity: 1, filter: 'blur(0)', textShadow: `0 0 0 ${hexToRgba(accent, 0)}` },
+    ],
+    { ...timing, duration: 760 },
+  ).finished.then(() => {
+    // Danach wieder ein schlichtes Element ohne Clipping
+    if (box.isConnected) box.replaceWith(current);
+  }, () => {});
+}
+
+function fadeLabel(label, beforeText, index) {
+  const delay = index * 70;
+  const old = el('span', { position: 'absolute', left: 0, top: 0 }, beforeText);
+  const text = el('span', {}, label.textContent);
+  label.style.position = 'relative';
+  label.replaceChildren(text, old);
+  old.animate([{ opacity: 1, transform: 'translateY(0)' }, { opacity: 0, transform: 'translateY(-60%)' }], { duration: 360, delay, easing: EASE, fill: 'both' });
+  text.animate([{ opacity: 0, transform: 'translateY(60%)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 420, delay: delay + 120, easing: EASE, fill: 'both' });
+}
+
+const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 /**
  * Zeichnet ein Overlay in `container`.
  * Mit `editable` bekommen die Widgets data-Attribute, damit der Editor sie verschieben kann.
+ * Wechseln die Stats zwischen Season und All-Time, zeichnet sich das Overlay zum Wechsel selbst neu;
+ * mit `redraw` übernimmt das stattdessen der Aufrufer (z. B. wenn er danach noch etwas anpasst).
  */
-export function renderOverlay(container, overlay, state, { editable = false, selectedId = null } = {}) {
+export function renderOverlay(container, overlay, state, options = {}) {
+  const { editable = false, selectedId = null, redraw = null } = options;
   const { style } = overlay;
   loadFont(style.fontFamily);
+
+  const period = statsPeriod(style, state);
+  const before = container.__fwPeriod;
+  const animate = before !== undefined && before !== period && !reducedMotion();
+  container.__fwPeriod = period;
+  clearTimeout(container.__fwTimer);
+  if ((style.statsPeriod ?? 'cycle') === 'cycle' && state?.season) {
+    const ms = cycleMs(style);
+    container.__fwTimer = setTimeout(() => (redraw ? redraw() : renderOverlay(container, overlay, state, options)), ms - (Date.now() % ms) + 20);
+  }
+  const rolled = [];
 
   const root = el('div', {
     position: 'relative',
@@ -226,7 +315,7 @@ export function renderOverlay(container, overlay, state, { editable = false, sel
 
   for (const widget of overlay.widgets) {
     if (!widget.enabled) continue;
-    const content = widgetContent(widget, style, state);
+    const content = widgetContent(widget, style, state, period);
     const node = el('div', {
       position: 'absolute',
       left: `${widget.x}px`,
@@ -236,10 +325,16 @@ export function renderOverlay(container, overlay, state, { editable = false, sel
       color: widget.color || style.textColor,
       whiteSpace: 'nowrap',
     });
-    if (widget.showLabel && widget.label) {
-      node.appendChild(el('div', { fontSize: '0.6em', color: style.labelColor, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }, widget.label));
+    const labelText = widgetLabel(widget, period);
+    let label = null;
+    if (widget.showLabel && labelText) {
+      label = el('div', { fontSize: '0.6em', color: style.labelColor, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }, labelText);
+      node.appendChild(label);
     }
-    node.appendChild(content ?? el('div', { opacity: 0.4 }, '–'));
+    const slot = el('div');
+    slot.appendChild(content ?? el('div', { opacity: 0.4 }, '–'));
+    node.appendChild(slot);
+    if (animate && PERIOD_WIDGETS.has(widget.type)) rolled.push({ widget, slot, label });
     if (editable) {
       node.dataset.widgetId = widget.id;
       node.style.cursor = 'move';
@@ -250,5 +345,13 @@ export function renderOverlay(container, overlay, state, { editable = false, sel
   }
 
   container.replaceChildren(root);
+  rolled
+    .sort((a, b) => a.widget.x - b.widget.x)
+    .forEach(({ widget, slot, label }, i) => {
+      const old = widgetContent(widget, style, state, before) ?? el('div', { opacity: 0.4 }, '–');
+      rollIn(slot, old, i, widget.color || style.accentColor);
+      const oldLabel = widgetLabel(widget, before);
+      if (label && oldLabel !== label.textContent) fadeLabel(label, oldLabel, i);
+    });
   return root;
 }

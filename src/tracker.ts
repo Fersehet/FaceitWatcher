@@ -28,6 +28,12 @@ export interface SeasonStats {
   wins: number;
   losses: number;
   winRate: number;
+  /** K/D, HS % und ADR der Season-Matches (laut Faceit, sonst aus gespeicherten Matches), null = unbekannt */
+  kd: number | null;
+  hsPercent: number | null;
+  adr: number | null;
+  /** true = K/D, HS % und ADR kommen von Faceit (alle Season-Matches) */
+  statsFromFaceit: boolean;
 }
 
 /** Ein Punkt im Elo-Verlauf: Stand nach dem Match (der erste Punkt ist der Stand davor, ohne Match). */
@@ -268,7 +274,8 @@ export class Tracker extends EventEmitter {
         eloChange: first ? player.elo - first.elo : null,
         trackedSince: first?.takenAt ?? null,
         trackedMatches: played.length,
-        kd: played.length ? Math.round((kills / Math.max(1, deaths)) * 100) / 100 : null,
+        // Gleiche K/D wie im Overlay; nur ohne Season-Wert die eigene Rechnung
+        kd: this.state.season.kd ?? (played.length ? Math.round((kills / Math.max(1, deaths)) * 100) / 100 : null),
         bestMap: best ? best[0] : null,
       };
     }
@@ -452,14 +459,34 @@ export class Tracker extends EventEmitter {
       return;
     }
     if (this.state.season?.start === start && this.seasonMatchesAt === player.matches) return;
-    const { matches, wins } = await this.source.fetchRecordSince(player.playerId, new Date(start));
+    const record = await this.source.fetchRecordSince(player.playerId, new Date(start));
+    const { matches, wins } = record;
     this.seasonMatchesAt = player.matches;
+    // Liefert Faceit keine Match-Stats, zählen die gespeicherten Matches seit Season-Start
+    const saved = record.kd === null ? this.savedAverages(player.playerId, new Date(start).toISOString()) : null;
     this.state.season = {
       start,
       matches,
       wins,
       losses: matches - wins,
       winRate: matches ? Math.round((wins / matches) * 100) : 0,
+      kd: saved ? saved.kd : record.kd,
+      hsPercent: saved ? saved.hsPercent : record.hsPercent,
+      adr: saved ? saved.adr : record.adr,
+      statsFromFaceit: !saved,
+    };
+  }
+
+  private savedAverages(playerId: string, since: string): Pick<SeasonStats, 'kd' | 'hsPercent' | 'adr'> {
+    const played = this.sessionMatches(playerId, since, 5000);
+    if (!played.length) return { kd: null, hsPercent: null, adr: null };
+    const kills = played.reduce((sum, m) => sum + m.kills, 0);
+    const deaths = played.reduce((sum, m) => sum + m.deaths, 0);
+    const withAdr = played.filter((m) => m.adr !== null);
+    return {
+      kd: Math.round((kills / Math.max(1, deaths)) * 100) / 100,
+      hsPercent: Math.round(played.reduce((sum, m) => sum + m.hsPercent, 0) / played.length),
+      adr: withAdr.length ? Math.round((withAdr.reduce((sum, m) => sum + m.adr!, 0) / withAdr.length) * 10) / 10 : null,
     };
   }
 
