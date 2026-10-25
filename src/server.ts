@@ -60,7 +60,7 @@ function isPublic(req: express.Request) {
     /^\/overlay\/[\w-]+$/.test(req.path) ||
     /^\/api\/overlays\/[\w-]+$/.test(req.path) ||
     [
-      '/api/state', '/api/events', '/api/matches', '/api/history', '/api/widgets',
+      '/api/state', '/api/events', '/api/matches', '/api/history', '/api/stats', '/api/widgets',
       '/login.html', '/css/editor.css', '/js/render.js', '/js/loader.js', '/js/i18n.js',
       '/favicon.svg', '/logo.svg',
     ].includes(req.path)
@@ -154,6 +154,12 @@ app.get('/api/state', (_req, res) => res.json(tracker.state));
 app.get('/api/matches', (req, res) => {
   const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
   res.json(storage.listMatches(tracker.state.player?.playerId ?? null, limit));
+});
+
+// Auswertung für den Statistik-Tab (Elo-Verlauf, Session), nur aus gespeicherten Daten
+app.get('/api/stats', (req, res) => {
+  const count = Math.min(50, Math.max(5, Number(req.query.count) || 20));
+  res.json(tracker.overview(count));
 });
 
 app.get('/api/widgets', (_req, res) => res.json(WIDGET_LABELS));

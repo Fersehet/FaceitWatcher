@@ -129,3 +129,58 @@ button.danger:hover { border-color: var(--danger); color: var(--danger); }
 
 .grid input:not([type='checkbox']), .grid select { width: 100%; min-width: 0; }
 .snap-guide { position: absolute; background: #ff5500; pointer-events: none; z-index: 10; }
+
+/* Tabs */
+.tabs { display: flex; gap: 2px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 2px; }
+.tabs button { border: 0; background: transparent; color: var(--muted); padding: 4px 10px; border-radius: 6px; }
+.tabs button:hover { color: var(--text); }
+.tabs button[aria-selected='true'] { background: var(--panel-2); color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
+body.tab-stats .overlay-picker { display: none; }
+body.tab-stats .account { margin-left: auto; }
+#overlayName { width: 140px; }
+/* Kopfzeile darf umbrechen, der Inhalt füllt den Rest der Höhe */
+body { display: flex; flex-direction: column; height: 100vh; }
+body > main { flex: 1; height: auto; min-height: 0; }
+.stats-view { flex: 1; min-height: 0; overflow-y: auto; width: 100%; }
+@media (max-width: 900px) { body { height: auto; } }
+[hidden] { display: none !important; }
+
+/* Statistik-Tab (wie der Statistik-Bereich der Website) */
+.stats-view { --mono: ui-monospace, 'JetBrains Mono', 'Cascadia Mono', Consolas, monospace; --up: #46d3b0; --down: #ff6b6b; padding: 24px 16px 40px; }
+.stats-view > * { max-width: 1180px; margin-left: auto; margin-right: auto; }
+.stats-view .stats-grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 24px; }
+.stats-view .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 22px; min-width: 0; display: flex; flex-direction: column; }
+.stats-view .panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.stats-view .panel-head > span { font: 500 12px/1 var(--mono); color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+.stats-view .panel-head b { font: 700 28px/1 var(--mono); font-variant-numeric: tabular-nums; }
+.stats-view .panel-head small { font-size: 14px; }
+.stats-view .up { color: var(--up); }
+.stats-view .down { color: var(--down); }
+.stats-view .chart { width: 100%; height: auto; display: block; margin-bottom: 16px; overflow: visible; }
+.stats-view .chart text { fill: var(--muted); font: 500 11px var(--mono); }
+.stats-view .chart .grid-line { stroke: var(--border); }
+.stats-view .chart .level-line { stroke: var(--muted); stroke-dasharray: 4 4; opacity: .7; }
+.stats-view .chart .dot:not(.estimated) { stroke: var(--panel); stroke-width: 1.5; }
+.stats-view .chart .dot.estimated { stroke-width: 2; }
+.stats-view .chart .empty { font-size: 13px; }
+.stats-view .trend { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin: auto 0 0; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.stats-view .trend div { background: var(--panel); padding: 12px 14px; display: grid; gap: 6px; }
+.stats-view .trend dt { font: 500 11px/1.2 var(--mono); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.stats-view .trend b, .stats-view .session b { font: 700 20px/1 var(--mono); font-variant-numeric: tabular-nums; }
+.stats-view .session { display: grid; gap: 1px; margin: 0; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.stats-view .session div { background: var(--panel); padding: 14px 18px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.stats-view .session dt { color: var(--muted); }
+.stats-view .example { font: 500 12px/1.4 var(--mono); color: var(--muted); margin: 12px 0 0; }
+.stats-view .levels { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px; margin-top: 24px; }
+.stats-view .levels div { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 10px 6px; text-align: center; }
+.stats-view .levels div.current { border-color: var(--lc); background: color-mix(in srgb, var(--lc) 14%, var(--panel)); }
+.stats-view .levels b { display: block; font: 700 18px/1 var(--mono); color: var(--lc); }
+.stats-view .levels span { display: block; margin-top: 6px; font: 500 11px/1.3 var(--mono); color: var(--muted); white-space: nowrap; }
+/* Schmal wie auf der Website: Verlauf, dann Level-Kacheln, dann die Session */
+@media (max-width: 900px) {
+  .stats-view { display: flex; flex-direction: column; gap: 24px; }
+  .stats-view .stats-grid { display: contents; }
+  .stats-view .levels { order: 1; margin-top: 0; }
+  .stats-view .stats-grid > .panel + .panel { order: 2; }
+}
+@media (max-width: 760px) { .stats-view .levels { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; } }
