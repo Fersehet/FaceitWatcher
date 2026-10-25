@@ -47,6 +47,8 @@ export interface MatchResult {
   adr: number | null;
   hsPercent: number;
   mvps: number | null;
+  /** Match-MVP = meiste Kills aller Spieler im Match (Gleichstand zählt). undefined = noch nicht ermittelt */
+  matchMvp?: boolean;
   /** Elo-Werte sind nur beim neuesten Match eines Abrufs bekannt, sonst null. */
   eloBefore: number | null;
   eloAfter: number | null;
@@ -64,6 +66,8 @@ export interface RecentMatch {
   eloChange: number | null;
   /** Geschätzt statt gemessen; im Editor lässt sich der echte Wert nachtragen */
   estimated: boolean;
+  /** Im Overlay mit Krone markiert */
+  mvp: boolean;
   map: string;
   finishedAt: string;
 }
@@ -89,6 +93,8 @@ export interface StatsSource {
   fetchAvatarFrame(playerId: string): Promise<string>;
   /** Elo nach den letzten `count` Matches, neueste zuerst (Best-Effort, [] wenn nicht verfügbar). */
   fetchEloHistory?(playerId: string, count: number): Promise<EloAfterMatch[]>;
+  /** Ob der Spieler im Match die meisten Kills hatte; null = nicht ermittelbar. Für ältere gespeicherte Matches. */
+  fetchMatchMvp?(matchId: string, playerId: string): Promise<boolean | null>;
 }
 
 /** Faceit CS2 Level-Grenzen (Mindest-Elo pro Level). */

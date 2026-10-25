@@ -30,6 +30,10 @@ export function loadFont(family) {
   document.head.appendChild(link);
 }
 
+const CROWN_SVG = '<svg viewBox="0 0 24 18" width="100%" height="100%" aria-hidden="true">'
+  + '<path d="M2 15 L1 4 L7.5 9 L12 1.5 L16.5 9 L23 4 L22 15 Z" fill="#ffc800" stroke="rgba(0,0,0,.45)" stroke-width="1.2" stroke-linejoin="round"/>'
+  + '<rect x="2" y="15" width="20" height="2.5" rx="1" fill="#e0a800"/></svg>';
+
 function el(tag, styles = {}, text) {
   const node = document.createElement(tag);
   Object.assign(node.style, styles);
@@ -218,16 +222,21 @@ function widgetContent(widget, style, state, period = 'alltime') {
         const text = m.eloChange == null ? '–' : String(Math.abs(m.eloChange));
         // Geschätzte Werte etwas blasser, bis die echte Zahl im Editor nachgetragen ist
         const textColor = m.estimated ? hexToRgba(color, 0.55) : color;
-        row.appendChild(
-          el(
-            'div',
-            {
-              width: `${w}px`, height: `${h}px`, borderRadius: '4px', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: `${size * 0.95}px`, lineHeight: 1,
-              background: hexToRgba(color, 0.25), color: textColor,
-            },
-            text,
-          ),
+        const box = el(
+          'div',
+          {
+            position: 'relative', width: `${w}px`, height: `${h}px`, borderRadius: '4px', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: `${size * 0.95}px`, lineHeight: 1,
+            background: hexToRgba(color, 0.25), color: textColor,
+          },
+          text,
         );
+        // Match-MVP: kleine Krone mittig auf der oberen Kante
+        if (m.mvp) {
+          const crown = el('div', { position: 'absolute', left: '50%', top: `${-size * 0.42}px`, width: `${size * 0.8}px`, height: `${size * 0.6}px`, transform: 'translateX(-50%)', lineHeight: 0 });
+          crown.innerHTML = CROWN_SVG;
+          box.appendChild(crown);
+        }
+        row.appendChild(box);
       }
       return row;
     }
