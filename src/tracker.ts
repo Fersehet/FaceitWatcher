@@ -79,7 +79,7 @@ export interface LiveState {
   player: PlayerSnapshot | null;
   session: SessionStats | null;
   season: SeasonStats | null;
-  /** Die letzten Matches mit Elo-Änderung, in derselben Reihenfolge wie player.recentResults */
+  /** Die letzten Matches mit Elo-Änderung, neuestes zuerst */
   recentMatches: RecentMatch[];
   error: string | null;
   updatedAt: string | null;
@@ -389,7 +389,7 @@ export class Tracker extends EventEmitter {
   private newestFirst = true;
 
   /**
-   * Die letzten fünf gespeicherten Matches mit Elo-Änderung. Fehlt sie (z. B. Matches vom ersten Start),
+   * Die letzten fünf gespeicherten Matches mit Elo-Änderung, neuestes zuerst. Fehlt sie (z. B. Matches vom ersten Start),
    * wird sie aus Faceits Elo-Verlauf nachgeschlagen (Best-Effort) und sonst geschätzt.
    */
   private async recentMatches(player: PlayerSnapshot): Promise<RecentMatch[]> {
@@ -433,7 +433,8 @@ export class Tracker extends EventEmitter {
     // Noch nicht genug gespeicherte Matches (z. B. Demo-Modus): Rest ohne Elo aus Faceits Ergebnissen auffüllen
     const faceitNewestFirst = this.newestFirst ? player.recentResults : [...player.recentResults].reverse();
     for (const result of faceitNewestFirst.slice(recent.length)) recent.push({ matchId: '', result, eloChange: result === 'W' ? typical : -typical, estimated: true, map: '', finishedAt: '' });
-    return this.newestFirst ? recent : recent.reverse();
+    // Im Overlay immer neuestes Match links, dann nach rechts immer älter
+    return recent;
   }
 
   private publish(match: MatchResult, announce: boolean) {
