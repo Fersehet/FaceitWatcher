@@ -521,6 +521,36 @@ for (const link of document.querySelectorAll('.rail [data-tab]')) {
 }
 setTab(location.hash === '#stats' ? 'stats' : 'overlay', false);
 
+// Mausrad wechselt die Ansicht wie Scrollen auf der Website: über der Vorschau nach unten = Statistiken,
+// in den Statistiken ganz oben nach oben = Overlay. Die Seitenleiste scrollt weiter normal.
+const wheelWide = matchMedia('(min-width: 1100px)');
+let wheelSum = 0;
+let wheelLock = 0;
+let wheelReset = 0;
+document.addEventListener('wheel', (e) => {
+  if (!wheelWide.matches || e.ctrlKey || Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
+  if (e.target.closest('input, select, textarea, aside, .overlay-picker')) return;
+  const down = e.deltaY > 0;
+  const want =
+    tab === 'overlay' && down && e.target.closest('.preview-area') ? 'stats'
+    : tab === 'stats' && !down && $('statsView').scrollTop <= 0 ? 'overlay'
+    : null;
+  if (!want) {
+    wheelSum = 0;
+    return;
+  }
+  e.preventDefault();
+  if (Date.now() < wheelLock) return;
+  // Kleine Trackpad-Bewegungen sammeln, damit nicht jeder Hauch umschaltet
+  wheelSum += e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+  clearTimeout(wheelReset);
+  wheelReset = setTimeout(() => (wheelSum = 0), 250);
+  if (Math.abs(wheelSum) < 60) return;
+  wheelSum = 0;
+  wheelLock = Date.now() + 900;
+  setTab(want);
+}, { passive: false });
+
 // ---------- Start ----------
 
 async function init() {
