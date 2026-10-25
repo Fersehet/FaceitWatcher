@@ -23,6 +23,10 @@ export interface PlayerSnapshot {
 export interface MatchRecord {
   matches: number;
   wins: number;
+  /** Durchschnittswerte über diese Matches, null = Faceit hat keine Match-Stats geliefert */
+  kd: number | null;
+  hsPercent: number | null;
+  adr: number | null;
 }
 
 /** Ein abgeschlossenes Match aus Sicht des getrackten Spielers. Wird gespeichert und an Editor und Overlay verteilt. */
@@ -77,7 +81,7 @@ export type MatchDetails = Omit<MatchResult, 'avatar' | 'avatarFrame' | 'eloBefo
 export interface StatsSource {
   readonly demo: boolean;
   fetchPlayer(nickname: string): Promise<PlayerSnapshot>;
-  /** Siege und Matches seit einem Zeitpunkt (z. B. Season-Start). */
+  /** Siege, Matches, K/D, HS % und ADR der Matchmaking-Matches seit einem Zeitpunkt (z. B. Season-Start). */
   fetchRecordSince(playerId: string, since: Date): Promise<MatchRecord>;
   /** Die letzten `count` Matches, neueste zuerst. Details werden nur für Matches geladen, die `isKnown` nicht kennt. */
   fetchRecentMatches(playerId: string, count: number, isKnown: (matchId: string) => boolean): Promise<MatchDetails[]>;

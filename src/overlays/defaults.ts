@@ -20,6 +20,9 @@ const LABELS: Record<WidgetType, string> = {
   recentResults: 'Letzte Matches',
 };
 
+/** Beschriftung der Season WR, während das Overlay die All-Time-Werte zeigt */
+const ALL_TIME_WR = 'All-Time WR';
+
 type Layout = Partial<Pick<Widget, 'x' | 'y' | 'fontSize' | 'enabled' | 'showLabel'>>;
 
 // Die fünf Stats unten verteilen sich gleichmäßig über die Breite des Fortschrittsbalkens (x 16 bis 400)
@@ -54,6 +57,7 @@ export function defaultWidgets(): Widget[] {
     label: LABELS[type],
     showLabel: true,
     ...LAYOUT[type],
+    ...(type === 'seasonWinRate' ? { altLabel: ALL_TIME_WR } : {}),
   }));
 }
 
@@ -74,6 +78,8 @@ export function defaultStyle(): OverlayStyle {
     negativeColor: '#ff453a',
     levelIcon: 'badge',
     showAvatarFrame: true,
+    statsPeriod: 'cycle',
+    statsCycleSeconds: 10,
   };
 }
 
@@ -114,6 +120,9 @@ export function upgradeOverlay(overlay: Overlay): Overlay {
     level.x = LAYOUT.level.x!;
     elo.x = LAYOUT.elo.x!;
   }
+  // Season WR wechselt jetzt mit All-Time und braucht dafür eine zweite Beschriftung
+  const season = overlay.widgets.find((w) => w.type === 'seasonWinRate');
+  if (season && season.altLabel === undefined) season.altLabel = ALL_TIME_WR;
   // Die Tagesbilanz endet seit der festen Breite bei x 336 bündig mit dem Elo-Balken
   if (record && record.x === 320 && record.y === 32) record.x = LAYOUT.sessionRecord.x!;
   return overlay;
