@@ -177,5 +177,11 @@ body > main { flex: 1; height: auto; min-height: 0; }
 .stats-view .levels div.current { border-color: var(--lc); background: color-mix(in srgb, var(--lc) 14%, var(--panel)); }
 .stats-view .levels b { display: block; font: 700 18px/1 var(--mono); color: var(--lc); }
 .stats-view .levels span { display: block; margin-top: 6px; font: 500 11px/1.3 var(--mono); color: var(--muted); white-space: nowrap; }
-@media (max-width: 900px) { .stats-view .stats-grid { grid-template-columns: minmax(0, 1fr); } }
+/* Schmal wie auf der Website: Verlauf, dann Level-Kacheln, dann die Session */
+@media (max-width: 900px) {
+  .stats-view { display: flex; flex-direction: column; gap: 24px; }
+  .stats-view .stats-grid { display: contents; }
+  .stats-view .levels { order: 1; margin-top: 0; }
+  .stats-view .stats-grid > .panel + .panel { order: 2; }
+}
 @media (max-width: 760px) { .stats-view .levels { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; } }
