@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import type { MatchResult, PlayerSnapshot, RecentMatch, StatsSource } from './faceit/types.ts';
+import { LEVEL_THRESHOLDS, type MatchResult, type PlayerSnapshot, type RecentMatch, type StatsSource } from './faceit/types.ts';
 import type { Storage } from './storage/storage.ts';
 
 /** Beginn der aktuellen FACEIT-Season (Season 9), solange im Editor kein eigenes Datum gesetzt ist. */
@@ -28,6 +28,34 @@ export interface SeasonStats {
   wins: number;
   losses: number;
   winRate: number;
+}
+
+/** Ein Punkt im Elo-Verlauf: Stand nach dem Match (der erste Punkt ist der Stand davor, ohne Match). */
+export interface EloChartPoint {
+  matchId: string;
+  finishedAt: string;
+  result: 'W' | 'L' | null;
+  map: string;
+  elo: number;
+  change: number;
+  /** Elo-Änderung geschätzt statt gemessen oder eingetragen */
+  estimated: boolean;
+}
+
+/** Auswertung für den Statistik-Tab im Editor, nur aus gespeicherten Matchmaking-Matches. */
+export interface StatsOverview {
+  elo: number;
+  level: number;
+  /** Nächstes Level und fehlende Elo, null auf Level 10 */
+  nextLevel: { level: number; elo: number; missing: number } | null;
+  /** Ältester Punkt zuerst */
+  history: EloChartPoint[];
+  matches: number;
+  change: number;
+  peak: number;
+  low: number;
+  avgPerMatch: number;
+  session: (SessionStats & { kd: number | null; bestMap: string | null }) | null;
 }
 
 export interface LiveState {
@@ -167,9 +195,7 @@ export class Tracker extends EventEmitter {
       session = this.newSession(player);
       this.saveSession(session);
     }
-    // Nur Matchmaking zählt: aus den gespeicherten (bereits gefilterten) Matches seit Session-Start
-    const since = session.startedAt;
-    const played = [...this.storage.listMatches(player.playerId, 200), ...this.pending.map((p) => p.match)].filter((m) => m.finishedAt >= since);
+    const played = this.sessionMatches(player.playerId, session.startedAt);
     const matches = played.length;
     const wins = played.filter((m) => m.result === 'W').length;
     return {
@@ -178,6 +204,68 @@ export class Tracker extends EventEmitter {
       matches,
       wins,
       losses: matches - wins,
+    };
+  }
+
+  /** Nur Matchmaking zählt: die gespeicherten (bereits gefilterten) Matches seit Session-Start */
+  private sessionMatches(playerId: string, since: string): MatchResult[] {
+    return [...this.storage.listMatches(playerId, 200), ...this.pending.map((p) => p.match)].filter((m) => m.finishedAt >= since);
+  }
+
+  /**
+   * Elo-Verlauf der letzten `count` Matches und Kennzahlen der Session für den Statistik-Tab.
+   * Der Verlauf wird vom aktuellen Elo-Stand rückwärts über die Elo-Änderungen der Matches berechnet;
+   * fehlt eine Änderung, wird sie wie bei "Letzte Matches" geschätzt.
+   */
+  overview(count: number): StatsOverview | null {
+    const player = this.state.player;
+    if (!player) return null;
+    const typical = this.typicalElo(player.playerId);
+    const points: EloChartPoint[] = [];
+    let elo = player.elo;
+    for (const m of this.storage.listMatches(player.playerId, count)) {
+      const change = m.eloChange ?? (m.result === 'W' ? typical : -typical);
+      points.unshift({ matchId: m.matchId, finishedAt: m.finishedAt, result: m.result, map: m.map, elo, change, estimated: m.eloChange === null || !!m.eloEstimated });
+      elo -= change;
+    }
+    points.unshift({ matchId: '', finishedAt: '', result: null, map: '', elo, change: 0, estimated: false });
+    const matches = points.length - 1;
+    const change = player.elo - elo;
+    const values = points.map((p) => p.elo);
+    const next = LEVEL_THRESHOLDS.find((min) => min > player.elo);
+
+    let session: StatsOverview['session'] = null;
+    if (this.state.session) {
+      const played = this.sessionMatches(player.playerId, this.state.session.startedAt);
+      const kills = played.reduce((sum, m) => sum + m.kills, 0);
+      const deaths = played.reduce((sum, m) => sum + m.deaths, 0);
+      // Beste Map: höchste Bilanz (Siege minus Niederlagen), bei Gleichstand mehr Siege; ohne Sieg keine
+      const maps = new Map<string, { wins: number; losses: number }>();
+      for (const m of played) {
+        if (!m.map) continue;
+        const r = maps.get(m.map) ?? { wins: 0, losses: 0 };
+        r[m.result === 'W' ? 'wins' : 'losses'] += 1;
+        maps.set(m.map, r);
+      }
+      const best = [...maps].filter(([, r]) => r.wins > 0).sort(([, a], [, b]) => b.wins - b.losses - (a.wins - a.losses) || b.wins - a.wins)[0];
+      session = {
+        ...this.state.session,
+        kd: played.length ? Math.round((kills / Math.max(1, deaths)) * 100) / 100 : null,
+        bestMap: best ? best[0] : null,
+      };
+    }
+
+    return {
+      elo: player.elo,
+      level: player.level,
+      nextLevel: next === undefined ? null : { level: LEVEL_THRESHOLDS.indexOf(next) + 1, elo: next, missing: next - player.elo },
+      history: points,
+      matches,
+      change,
+      peak: Math.max(...values),
+      low: Math.min(...values),
+      avgPerMatch: matches ? Math.round((change / matches) * 10) / 10 : 0,
+      session,
     };
   }
 
