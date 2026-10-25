@@ -1,4 +1,4 @@
-// Statistik-Tab im Editor: Elo-Verlauf, heutige Session und Level-Grenzen.
+// Statistik-Tab im Editor: Elo-Verlauf, aktuelle Season und Level-Grenzen.
 // Die Zahlen kommen aus /api/stats, also nur aus gespeicherten Matchmaking-Matches (keine eigene Faceit-Abfrage).
 import { locale, t } from './i18n.js';
 
@@ -40,7 +40,7 @@ export async function loadStats() {
 
 export function renderStats() {
   renderChart();
-  renderSession();
+  renderSeason();
   renderLevels();
 }
 
@@ -116,17 +116,26 @@ function renderChart() {
   $('chartNote').textContent = notes.join(' ');
 }
 
-function renderSession() {
-  const s = data?.session;
-  setValue('ssElo', s ? signed(s.eloChange) : '–', trendClass(s?.eloChange ?? 0));
-  setValue('ssMatches', s ? String(s.matches) : '–');
+function renderSeason() {
+  const s = data?.season;
+  $('seasonSince').textContent = s ? t('seasonSince', { d: shortDate(s.start) }) : '';
+  setValue('ssElo', s?.eloChange != null ? signed(s.eloChange) : '–', trendClass(s?.eloChange ?? 0));
   setValue('ssWL', s ? `${s.wins} – ${s.losses}` : '–');
+  setValue('ssWr', s?.matches ? `${s.winRate} %` : '–');
   setValue('ssKd', s?.kd != null ? num(s.kd, 2) : '–');
   setValue('ssMap', s?.bestMap ? mapName(s.bestMap) : '–');
   const next = data?.nextLevel;
   $('ssNextLabel').textContent = next || !data ? t('dtLvl', { l: next?.level ?? '' }).trim() : t('dtMaxLvl');
   setValue('ssNext', next ? `${num(next.missing)} Elo` : data ? `${num(data.elo)} Elo` : '–');
-  $('sessionNote').textContent = s ? t('sessionSince', { t: new Date(s.startedAt).toLocaleString(locale(), { weekday: 'short', hour: '2-digit', minute: '2-digit' }) }) : '';
+
+  let note = '';
+  if (data && !s) note = t('seasonNoStart');
+  else if (s) {
+    // Eigene Daten erst ab dem ersten gespeicherten Stand, z. B. wenn FaceitWatcher nach Season-Start eingerichtet wurde
+    const late = s.trackedSince && s.trackedSince.slice(0, 10) > s.start;
+    note = t(late ? 'seasonNoteLate' : 'seasonNote', { n: s.trackedMatches, d: late ? shortDate(s.trackedSince) : '' });
+  }
+  $('seasonNote').textContent = note;
 }
 
 function renderLevels() {
