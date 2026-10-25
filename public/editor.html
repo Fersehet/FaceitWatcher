@@ -10,6 +10,10 @@
   <body>
     <header>
       <div class="brand"><img class="brand-mark" src="/logo.svg" alt="" width="28" height="28" /><b>Faceit<span>Watcher</span></b></div>
+      <nav class="tabs" role="tablist">
+        <button id="tabOverlay" role="tab" data-tab="overlay" data-i18n="tabOverlay">Overlay</button>
+        <button id="tabStats" role="tab" data-tab="stats" data-i18n="tabStats">Statistiken</button>
+      </nav>
       <div id="status" class="status"></div>
       <div class="overlay-picker">
         <select id="overlaySelect" aria-label="Overlay auswählen" data-i18n-aria-label="selectOverlay"></select>
@@ -27,7 +31,7 @@
       </div>
     </header>
 
-    <main>
+    <main id="overlayView">
       <aside>
         <section>
           <h2 data-i18n="player">Spieler</h2>
@@ -89,6 +93,37 @@
         <p class="hint" data-i18n="checker">Karomuster = transparent in OBS</p>
       </div>
     </main>
+
+    <div id="statsView" class="stats-view" hidden>
+      <div class="stats-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <span id="chartHead"></span>
+            <b><span id="chartElo">–</span> <small id="chartChange"></small></b>
+          </div>
+          <svg id="eloChart" class="chart" viewBox="0 0 600 220" role="img"></svg>
+          <dl class="trend">
+            <div><dt data-i18n="trPeak">Höchststand</dt><b id="trPeak">–</b></div>
+            <div><dt data-i18n="trLow">Tiefpunkt</dt><b id="trLow">–</b></div>
+            <div><dt data-i18n="trAvg">Ø pro Match</dt><b id="trAvg">–</b></div>
+          </dl>
+          <p class="example" id="chartNote"></p>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><span data-i18n="sessHead">Heutige Session</span><span class="live-dot" data-i18n="liveTag">live</span></div>
+          <dl class="session">
+            <div><dt data-i18n="dtElo">Elo heute</dt><b id="ssElo">–</b></div>
+            <div><dt data-i18n="dtMatches">Matches</dt><b id="ssMatches">–</b></div>
+            <div><dt data-i18n="dtWL">Siege / Niederlagen</dt><b id="ssWL">–</b></div>
+            <div><dt data-i18n="dtKd">K/D heute</dt><b id="ssKd">–</b></div>
+            <div><dt data-i18n="dtMap">Beste Map</dt><b id="ssMap">–</b></div>
+            <div><dt id="ssNextLabel"></dt><b id="ssNext">–</b></div>
+          </dl>
+          <p class="example" id="sessionNote"></p>
+        </div>
+      </div>
+      <div id="levelTiles" class="levels" role="list"></div>
+    </div>
 
     <script type="module" src="/js/editor.js"></script>
   </body>
