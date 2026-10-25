@@ -46,7 +46,7 @@ function drawPreview() {
   const preview = $('preview');
   const area = document.querySelector('.preview-area');
   const { width, height } = overlay.style;
-  scale = Math.min(2, (area.clientWidth - 100) / width, (area.clientHeight - 120) / height);
+  scale = Math.min(2, (area.clientWidth - 100) / width, (area.clientHeight - 168) / height);
   scale = Math.max(0.2, scale);
   preview.style.transform = `scale(${scale})`;
   preview.style.marginRight = `${width * (scale - 1)}px`;
@@ -398,6 +398,7 @@ function renderStatus() {
     status.className = 'status live';
     status.textContent = state?.player ? t('live', { n: state.player.nickname }) : t('connecting');
   }
+  status.title = status.textContent;
   if (document.activeElement !== $('nickname')) $('nickname').value = state?.nickname ?? '';
   if (document.activeElement !== $('frameUrl')) $('frameUrl').value = state?.avatarFrameOverride ?? '';
   $('frameInfo').textContent = state?.avatarFrameOverride
