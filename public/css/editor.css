@@ -184,3 +184,29 @@ body > main { flex: 1; height: auto; min-height: 0; }
   .stats-view .stats-grid > .panel + .panel { order: 2; }
 }
 @media (max-width: 760px) { .stats-view .levels { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; } }
+
+/* Ladebildschirm wie auf der Website: Logo baut sich auf und pulsiert, danach verschwimmt er in die Seite */
+.intro { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: radial-gradient(60% 50% at 50% 50%, #1a1208 0%, var(--bg) 70%); transition: opacity .6s ease, filter .6s ease, visibility 0s .6s; }
+.intro.done { opacity: 0; filter: blur(14px); visibility: hidden; pointer-events: none; }
+.intro-inner { display: grid; justify-items: center; gap: 18px; transition: transform .6s cubic-bezier(.5, 0, .2, 1); }
+.intro.done .intro-inner { transform: scale(1.35); }
+.intro-logo { overflow: visible; filter: drop-shadow(0 0 18px rgba(255, 85, 0, .45)); animation: fw-pulse 1.1s ease-in-out .9s infinite; }
+.i-ring { stroke-dasharray: 100; stroke-dashoffset: 100; transform: rotate(-90deg); transform-origin: 32px 32px; animation: intro-draw .7s cubic-bezier(.6, 0, .2, 1) .1s forwards; }
+.i-cross { opacity: 0; transform: scale(.4); transform-origin: 32px 32px; animation: intro-pop .45s cubic-bezier(.3, 1.6, .5, 1) .45s forwards; }
+.i-core { opacity: 0; animation: intro-fade .4s ease .3s forwards; }
+.i-arrow { stroke-dasharray: 100; stroke-dashoffset: 100; animation: intro-draw .45s ease-out .65s forwards; }
+.i-head { opacity: 0; transform: translate(-6px, 6px); animation: intro-pop .3s ease-out 1s forwards; }
+.intro-word { font: 800 30px/1 "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif; letter-spacing: -.01em; color: var(--text); opacity: 0; animation: intro-rise .5s ease .75s forwards; }
+.intro-word span { color: var(--accent); }
+.intro-bar { width: 160px; height: 2px; background: var(--border); border-radius: 2px; overflow: hidden; opacity: 0; animation: intro-fade .3s ease .8s forwards; }
+.intro-bar i { display: block; height: 100%; width: 100%; background: var(--accent); box-shadow: 0 0 10px rgba(255, 85, 0, .45); transform-origin: left; transform: scaleX(var(--p, .1)); transition: transform .35s ease; }
+@keyframes intro-draw { to { stroke-dashoffset: 0; } }
+@keyframes intro-pop { to { opacity: 1; transform: none; } }
+@keyframes intro-fade { to { opacity: 1; } }
+@keyframes intro-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes fw-pulse { 0%, 100% { transform: scale(.94); } 50% { transform: scale(1.04); } }
+@media (prefers-reduced-motion: reduce) {
+  .intro-logo { animation: none; }
+  .i-ring, .i-arrow { animation: none; stroke-dashoffset: 0; }
+  .i-cross, .i-core, .i-head, .intro-word, .intro-bar { animation: none; opacity: 1; transform: none; }
+}
