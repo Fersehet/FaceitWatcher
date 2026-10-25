@@ -1,6 +1,7 @@
 import { FONTS, renderOverlay } from './render.js';
 import { createLoader } from './loader.js';
 import { initLangSelect, locale, t, widgetName } from './i18n.js';
+import { loadStats, renderStats } from './stats.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -435,6 +436,24 @@ function renderRecentElo() {
   }
 }
 
+// ---------- Tabs ----------
+
+let tab = 'overlay';
+
+function setTab(next) {
+  tab = next === 'stats' ? 'stats' : 'overlay';
+  for (const button of document.querySelectorAll('.tabs [data-tab]')) button.setAttribute('aria-selected', String(button.dataset.tab === tab));
+  $('overlayView').hidden = tab !== 'overlay';
+  $('statsView').hidden = tab !== 'stats';
+  document.body.classList.toggle('tab-stats', tab === 'stats');
+  history.replaceState(null, '', tab === 'stats' ? '#stats' : location.pathname + location.search);
+  if (tab === 'stats') loadStats();
+  else if (overlay) drawPreview();
+}
+
+for (const button of document.querySelectorAll('.tabs [data-tab]')) button.addEventListener('click', () => setTab(button.dataset.tab));
+setTab(location.hash === '#stats' ? 'stats' : 'overlay');
+
 // ---------- Start ----------
 
 async function init() {
@@ -537,6 +556,7 @@ async function init() {
     state = JSON.parse(e.data);
     renderStatus();
     drawPreview();
+    if (tab === 'stats') loadStats();
   });
 }
 
@@ -554,6 +574,7 @@ async function initAccount() {
 // Sprache: feste Texte übersetzt i18n.js, die selbst gebauten Teile werden neu gezeichnet
 initLangSelect($('langSel'));
 document.addEventListener('fw:lang', () => {
+  if (tab === 'stats') renderStats();
   if (!overlay) return;
   renderStatus();
   renderWidgetList();
