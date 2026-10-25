@@ -5,40 +5,40 @@
   </picture>
 </h1>
 
-Eigene Faceit-Overlays (Elo, Level, K/D, Session-Stats, …) für OBS bauen und selbst hosten. Der Server fragt Faceit ab und speichert deine Statistiken, im Editor gestaltest du das Overlay, OBS zeigt es als Browserquelle.
+Build your own Faceit overlays (Elo, level, K/D, session stats, …) for OBS and host them yourself. The server polls Faceit and stores your statistics, you design the overlay in the editor, and OBS shows it as a browser source.
 
 <p align="center">
-  <img src="docs/screenshots/overlay.png" alt="Fertiges Overlay, wie es in OBS erscheint" width="420">
+  <img src="docs/screenshots/overlay.png" alt="Finished overlay as it appears in OBS" width="420">
 </p>
 
-## So sieht es aus
+## What it looks like
 
-**Editor:** Overlay live gestalten, Elemente per Drag & Drop verschieben, OBS-Link kopieren.
+**Editor:** design the overlay live, drag elements into place, copy the OBS link.
 
-![Editor mit Overlay-Vorschau](docs/screenshots/editor.png)
+![Editor with overlay preview](docs/screenshots/editor.png)
 
-**Stats an- und abwählen:** Jede Kennzahl lässt sich einzeln ein- und ausblenden, Reihenfolge, Schrift und Farben stellst du unter **Design** ein.
+**Pick your stats:** every stat can be shown or hidden on its own and reordered. Fonts and colours are set under **Design**.
 
-![Editor mit Stats-Auswahl](docs/screenshots/editor-anpassen.png)
+![Editor with the stats list](docs/screenshots/editor-widgets.png)
 
-**Statistiken:** Elo-Verlauf der letzten 20 Matches, aktuelle Season und alle Faceit-Level im Überblick.
+**Statistics:** Elo history of your last 20 matches, the current season and all Faceit levels at a glance.
 
-![Statistik-Ansicht mit Elo-Verlauf und Season](docs/screenshots/statistiken.png)
+![Statistics view with Elo history and season](docs/screenshots/stats.png)
 
-Alle Screenshots zeigen den Demo-Modus mit Beispieldaten.
+The screenshots use the stats of donk (Faceit donk666, as of Oct 25, 2026), played back in demo mode. The editor is available in English, German, Russian and French.
 
-## Voraussetzungen
+## Requirements
 
-- [Node.js](https://nodejs.org) 22.13 oder neuer
-- Ein Faceit API-Key (ohne Key läuft alles im Demo-Modus mit Beispieldaten)
+- [Node.js](https://nodejs.org) 22.13 or newer
+- A Faceit API key (without a key everything runs in demo mode with sample data)
 
-## Faceit API-Key holen
+## Getting a Faceit API key
 
-1. Auf [developers.faceit.com](https://developers.faceit.com) einloggen.
-2. Im **App Studio** eine App anlegen.
-3. Unter **API Keys** einen Key vom Typ **Server side** erstellen.
+1. Log in at [developers.faceit.com](https://developers.faceit.com).
+2. Create an app in the **App Studio**.
+3. Under **API Keys**, create a key of type **Server side**.
 
-## Einrichten und starten
+## Setup and start
 
 ```bash
 git clone https://github.com/Fersehet/FaceitWatcher.git
@@ -47,30 +47,30 @@ npm install
 cp .env.example .env   # Windows: copy .env.example .env
 ```
 
-In `.env` mindestens eintragen:
+Put at least this into `.env`:
 
 ```env
-FACEIT_API_KEY=dein-key
-ADMIN_PASSWORD=ein-langes-passwort
+FACEIT_API_KEY=your-key
+ADMIN_PASSWORD=a-long-password
 ```
 
-Dann starten:
+Then start it:
 
 ```bash
 npm start
 ```
 
-Im Browser **http://localhost:3000** öffnen und mit Benutzer `admin` und deinem Passwort anmelden. Im Editor deinen Faceit-Nickname eintragen und das Overlay gestalten.
+Open **http://localhost:3000** in your browser and sign in with user `admin` and your password. Enter your Faceit nickname in the editor and design your overlay.
 
-## In OBS einbinden
+## Adding it to OBS
 
-1. Im Editor bei **In OBS einbinden** die URL kopieren, z. B. `http://localhost:3000/overlay/abcd1234`.
-2. In OBS **Quelle hinzufügen → Browser** wählen und die URL einfügen.
-3. Breite und Höhe wie im Editor unter **Design** eintragen.
+1. In the editor under **Add to OBS**, copy the URL, e.g. `http://localhost:3000/overlay/abcd1234`.
+2. In OBS choose **Add source → Browser** and paste the URL.
+3. Enter the width and height shown in the editor under **Design**.
 
-Läuft der Server auf einem anderen Rechner, statt `localhost` dessen IP verwenden. Overlays sind ohne Login lesbar, der Editor nicht.
+If the server runs on another machine, use its IP instead of `localhost`. Overlays can be read without signing in, the editor cannot.
 
-## Update
+## Updating
 
 ```bash
 git pull
@@ -78,4 +78,4 @@ npm install
 npm start
 ```
 
-Deine Overlays und Statistiken liegen in `data/` und bleiben erhalten. Weitere Einstellungen (Port, Abfrage-Intervall, Speicherort) stehen in `.env.example`.
+Your overlays and statistics live in `data/` and are kept. More settings (port, poll interval, storage location) are listed in `.env.example`.
