@@ -1,6 +1,6 @@
 import { FONTS, renderOverlay } from './render.js';
 import { createIntro, createLoader } from './loader.js';
-import { initLangSelect, locale, t, widgetName } from './i18n.js';
+import { initLangSelect, locale, setText, showText, t, tx, widgetName, wx } from './i18n.js';
 import { loadStats, renderStats } from './stats.js';
 
 const $ = (id) => document.getElementById(id);
@@ -248,7 +248,7 @@ function renderWidgetList() {
     });
     toggle.setAttribute('aria-label', t('show', { n: widgetName(w.label) }));
     const name = document.createElement('span');
-    name.textContent = widgetName(w.label) || w.type;
+    name.append(w.label ? wx(w.label) : w.type);
     name.addEventListener('click', () => select(selectedId === w.id ? null : w.id));
 
     const up = document.createElement('button');
@@ -275,27 +275,27 @@ function renderWidgetList() {
       changed();
     });
     details.append(
-      field(t('label'), input('text', w.label, (v) => {
+      field(tx('label'), input('text', w.label, (v) => {
         w.label = v;
-        name.textContent = widgetName(v) || w.type;
+        name.replaceChildren(v ? wx(v) : w.type);
         changed();
       }), 'full'),
       ...(w.type === 'seasonWinRate'
-        ? [field(t('altLabel'), input('text', w.altLabel ?? '', (v) => {
+        ? [field(tx('altLabel'), input('text', w.altLabel ?? '', (v) => {
             w.altLabel = v;
             changed();
           }), 'full')]
         : []),
-      field(t('showLabel'), input('checkbox', w.showLabel, (v) => {
+      field(tx('showLabel'), input('checkbox', w.showLabel, (v) => {
         w.showLabel = v;
         changed();
       })),
-      field(t('customColor'), customColor),
-      field(t('size'), input('number', w.fontSize, (v) => {
+      field(tx('customColor'), customColor),
+      field(tx('size'), input('number', w.fontSize, (v) => {
         w.fontSize = Math.max(6, v);
         changed();
       }, { min: 6, max: 200 })),
-      field(t('color'), colorInput),
+      field(tx('color'), colorInput),
       field('X', input('number', w.x, (v) => {
         w.x = v;
         changed();
@@ -337,7 +337,7 @@ function renderStyleForm() {
   const form = $('styleForm');
   form.replaceChildren();
   for (const [key, labelKey, type, attrs] of STYLE_FIELDS) {
-    const label = t(labelKey);
+    const label = tx(labelKey);
     const set = (v) => {
       overlay.style[key] = key === 'statsCycleSeconds' ? Math.max(3, v || 10) : v;
       changed();
@@ -393,30 +393,22 @@ function renderStatus() {
   if (state?.error) {
     status.className = 'status error';
     status.textContent = state.error;
-  } else if (state?.demo) {
-    status.className = 'status demo';
-    status.textContent = t('demo');
+    status.title = state.error;
   } else {
-    status.className = 'status live';
-    status.textContent = state?.player ? t('live', { n: state.player.nickname }) : t('connecting');
+    status.className = `status ${state?.demo ? 'demo' : 'live'}`;
+    const [key, vars] = state?.demo ? ['demo'] : state?.player ? ['live', { n: state.player.nickname }] : ['connecting'];
+    setText(status, key, vars);
+    status.title = t(key, vars);
   }
-  status.title = status.textContent;
   if (document.activeElement !== $('nickname')) $('nickname').value = state?.nickname ?? '';
   if (document.activeElement !== $('frameUrl')) $('frameUrl').value = state?.avatarFrameOverride ?? '';
-  $('frameInfo').textContent = state?.avatarFrameOverride
-    ? t('frameCustom')
-    : state?.player?.avatarFrame
-      ? t('frameFound')
-      : t('frameNone');
+  setText($('frameInfo'), state?.avatarFrameOverride ? 'frameCustom' : state?.player?.avatarFrame ? 'frameFound' : 'frameNone');
   if (document.activeElement !== $('seasonStart')) $('seasonStart').value = state?.seasonStart ?? '';
   const season = state?.season;
-  $('seasonInfo').textContent = season
-    ? t('season', { w: season.wins, l: season.losses, m: season.matches, r: season.winRate })
-    : state?.seasonStart ? '' : t('seasonNone');
+  if (season) setText($('seasonInfo'), 'season', { w: season.wins, l: season.losses, m: season.matches, r: season.winRate });
+  else setText($('seasonInfo'), state?.seasonStart ? '' : 'seasonNone');
   const s = state?.session;
-  $('sessionInfo').textContent = s
-    ? t('session', { t: new Date(s.startedAt).toLocaleString(locale()), w: s.wins, l: s.losses, e: `${s.eloChange >= 0 ? '+' : ''}${s.eloChange}` })
-    : '';
+  setText($('sessionInfo'), s && 'session', s && { t: new Date(s.startedAt).toLocaleString(locale()), w: s.wins, l: s.losses, e: `${s.eloChange >= 0 ? '+' : ''}${s.eloChange}` });
   renderRecentElo();
 }
 
@@ -432,7 +424,8 @@ function renderRecentElo() {
     const li = document.createElement('li');
     const res = Object.assign(document.createElement('span'), { className: `res ${m.result}`, textContent: m.result });
     const date = m.finishedAt ? new Date(m.finishedAt).toLocaleString(locale(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-    const info = Object.assign(document.createElement('span'), { className: 'info', textContent: [m.map.replace(/^de_/, ''), date, m.ranked === false ? t('noElo') : ''].filter(Boolean).join(' · ') + (m.mvp ? ' 👑' : '') });
+    const info = Object.assign(document.createElement('span'), { className: 'info' });
+    setText(info, (l) => [m.map.replace(/^de_/, ''), date, m.ranked === false ? t('noElo', null, l) : ''].filter(Boolean).join(' · ') + (m.mvp ? ' 👑' : ''));
     const amount = m.eloChange == null ? '' : String(Math.abs(m.eloChange));
     const field = Object.assign(document.createElement('input'), { type: 'number', min: 0, max: 100, step: 1 });
     // Geschätzt: nur als Platzhalter zeigen, damit klar ist, dass noch nichts eingetragen wurde
@@ -644,8 +637,8 @@ async function init() {
   });
   $('copyUrl').addEventListener('click', async () => {
     await navigator.clipboard?.writeText($('obsUrl').value);
-    $('copyUrl').textContent = t('copied');
-    setTimeout(() => ($('copyUrl').textContent = t('copy')), 1500);
+    showText($('copyUrl'), 'copied');
+    setTimeout(() => showText($('copyUrl'), 'copy'), 1500);
   });
 
   window.addEventListener('resize', drawPreview);
