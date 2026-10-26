@@ -3,7 +3,7 @@ import { levelForElo, type MatchDetails, type MatchRecord, type PlayerSnapshot, 
 /**
  * Liefert erfundene Daten, solange kein API-Key eingetragen ist.
  * Bei jeder Abfrage wird mit 50 % Wahrscheinlichkeit ein Match "gespielt",
- * damit Live-Updates im Overlay sichtbar werden.
+ * damit Live-Updates im Overlay sichtbar werden. Etwa jedes fünfte ist ein Hub-Match ohne Elo.
  */
 export class DemoSource implements StatsSource {
   readonly demo = true;
@@ -55,7 +55,9 @@ export class DemoSource implements StatsSource {
 
   private playMatch() {
     const won = Math.random() < 0.55;
-    const delta = 20 + Math.floor(Math.random() * 10);
+    // Hubs, Turniere und Ligen zählen in allen Stats mit, bringen aber keine Elo
+    const ranked = Math.random() >= 0.2;
+    const delta = ranked ? 20 + Math.floor(Math.random() * 10) : 0;
     this.matches += 1;
     if (won) {
       this.wins += 1;
@@ -89,6 +91,7 @@ export class DemoSource implements StatsSource {
       hsPercent: 30 + Math.floor(Math.random() * 35),
       mvps: Math.floor(Math.random() * 6),
       matchMvp: Math.random() < 0.3,
+      ranked,
       url: `https://www.faceit.com/de/cs2/room/${id}`,
     });
     this.played = this.played.slice(0, 20);

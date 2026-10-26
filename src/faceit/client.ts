@@ -76,7 +76,7 @@ export class FaceitClient implements StatsSource {
       );
       const items: any[] = page.items ?? [];
       for (const m of items) {
-        if (!isFinished(m) || !isMatchmaking(m)) continue;
+        if (!isFinished(m)) continue;
         const winner = m.results?.winner;
         const team = Object.entries(m.teams ?? {}).find(([, t]: [string, any]) =>
           (t.players ?? []).some((p: any) => p.player_id === playerId),
@@ -93,7 +93,7 @@ export class FaceitClient implements StatsSource {
 
   /**
    * K/D, HS % und ADR über genau diese Matches. Die Stats pro Match kommen seitenweise (neueste zuerst)
-   * von /players/{id}/games/cs2/stats; gezählt werden nur die übergebenen Matchmaking-Matches.
+   * von /players/{id}/games/cs2/stats; gezählt werden nur die übergebenen Matches.
    */
   private async statsOf(playerId: string, ids: Set<string>): Promise<Pick<MatchRecord, 'kd' | 'hsPercent' | 'adr'>> {
     const none = { kd: null, hsPercent: null, adr: null };
@@ -133,10 +133,10 @@ export class FaceitClient implements StatsSource {
   }
 
   async fetchRecentMatches(playerId: string, count: number, isKnown: (matchId: string) => boolean): Promise<MatchDetails[]> {
-    // Mehr laden als nötig, weil Turniere und Ligen herausgefiltert werden
-    const history = await this.get<any>(`/players/${playerId}/history?game=${GAME}&offset=0&limit=${count * 4}`);
+    // Alle Faceit-Matches zählen (Matchmaking, Hubs, Turniere, Ligen); etwas mehr laden, falls noch laufende dabei sind
+    const history = await this.get<any>(`/players/${playerId}/history?game=${GAME}&offset=0&limit=${count + 5}`);
     const results: MatchDetails[] = [];
-    const items = (history.items ?? []).filter((m: any) => isFinished(m) && isMatchmaking(m)).slice(0, count);
+    const items = (history.items ?? []).filter((m: any) => isFinished(m)).slice(0, count);
     for (const m of items) {
       if (isKnown(m.match_id)) continue;
       const stats = await this.get<any>(`/matches/${m.match_id}/stats`);
@@ -161,6 +161,7 @@ export class FaceitClient implements StatsSource {
         hsPercent: num(s['Headshots %']) ?? 0,
         mvps: num(s['MVPs']),
         matchMvp: isTopFragger(players, playerId),
+        ranked: isRanked(m),
         url: String(m.faceit_url ?? '').replace('{lang}', 'de'),
       });
     }
@@ -253,8 +254,8 @@ function isFinished(m: any): boolean {
   return !m.status || String(m.status).toUpperCase() === 'FINISHED';
 }
 
-/** Nur Matchmaking zählt, keine Turniere (championship) oder Ligen. */
-function isMatchmaking(m: any): boolean {
+/** Elo gibt es nur im Matchmaking; Hubs, Turniere (championship), Ligen und Customs laufen ohne Elo. */
+function isRanked(m: any): boolean {
   return !m.competition_type || String(m.competition_type).toLowerCase() === 'matchmaking';
 }
 
