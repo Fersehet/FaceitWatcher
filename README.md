@@ -1,7 +1,7 @@
 <h1>
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="public/logo-animated.svg">
-    <img src="public/logo-animated-light.svg" alt="FaceitWatcher" height="72">
+    <img src="public/logo-animated-light.svg" alt="FaceitWatchr" height="72">
   </picture>
 </h1>
 
