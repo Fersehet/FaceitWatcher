@@ -47,6 +47,8 @@ export interface MatchResult {
   adr: number | null;
   hsPercent: number;
   mvps: number | null;
+  /** false = Match ohne Elo (z. B. Hub, Turnier, Liga oder Custom), zählt in allen Stats, aber nicht im Ø Elo pro Match. Fehlt bei alten Matches = mit Elo */
+  ranked?: boolean;
   /** Match-MVP = meiste Kills aller Spieler im Match (Gleichstand zählt). undefined = noch nicht ermittelt */
   matchMvp?: boolean;
   /** Elo-Werte sind nur beim neuesten Match eines Abrufs bekannt, sonst null. */
@@ -68,6 +70,8 @@ export interface RecentMatch {
   estimated: boolean;
   /** Im Overlay mit Krone markiert */
   mvp: boolean;
+  /** false = Match ohne Elo (Hub, Turnier, …), eloChange ist dann 0 */
+  ranked: boolean;
   map: string;
   finishedAt: string;
 }
@@ -85,7 +89,7 @@ export type MatchDetails = Omit<MatchResult, 'avatar' | 'avatarFrame' | 'eloBefo
 export interface StatsSource {
   readonly demo: boolean;
   fetchPlayer(nickname: string): Promise<PlayerSnapshot>;
-  /** Siege, Matches, K/D, HS % und ADR der Matchmaking-Matches seit einem Zeitpunkt (z. B. Season-Start). */
+  /** Siege, Matches, K/D, HS % und ADR aller Faceit-Matches (auch Hubs, Turniere, Ligen) seit einem Zeitpunkt (z. B. Season-Start). */
   fetchRecordSince(playerId: string, since: Date): Promise<MatchRecord>;
   /** Die letzten `count` Matches, neueste zuerst. Details werden nur für Matches geladen, die `isKnown` nicht kennt. */
   fetchRecentMatches(playerId: string, count: number, isKnown: (matchId: string) => boolean): Promise<MatchDetails[]>;
