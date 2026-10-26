@@ -43,17 +43,14 @@
       <p class="msg" id="msg" role="alert"></p>
     </form>
     <script type="module">
-      import { initLangSelect, t } from '/js/i18n.js';
+      import { initLangSelect, setText } from '/js/i18n.js';
 
       const $ = (id) => document.getElementById(id);
-      let lastKey = null;
       const show = (key, info) => {
-        lastKey = key;
-        $('msg').textContent = key ? t(key) : '';
+        setText($('msg'), key);
         $('msg').className = info ? 'msg info' : 'msg';
       };
       initLangSelect($('langSel'));
-      document.addEventListener('fw:lang', () => lastKey && ($('msg').textContent = t(lastKey)));
 
       // Nur Pfade auf diesem Server als Ziel zulassen
       let next = new URLSearchParams(location.search).get('next') || '';

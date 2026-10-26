@@ -212,6 +212,7 @@ body > main { flex: 1; height: auto; min-height: 0; }
 .stats-view .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 22px; min-width: 0; display: flex; flex-direction: column; }
 .stats-view .panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 .stats-view .panel-head > span { font: 500 12px/1 var(--mono); color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+.stats-view .panel-head > span:last-child { text-align: right; }
 .stats-view .panel-head b { font: 700 28px/1 var(--mono); font-variant-numeric: tabular-nums; }
 .stats-view .panel-head small { font-size: 14px; }
 .stats-view .up { color: var(--up); }
