@@ -183,7 +183,7 @@ export class FaceitClient implements StatsSource {
     try {
       const res = await fetch('https://www.faceit.com/api/user-summary/v2/list', {
         method: 'POST',
-        headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 FaceitWatcher' },
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 FaceitWatchr' },
         body: JSON.stringify({ ids: [playerId] }),
       });
       if (!res.ok) return '';
@@ -201,7 +201,7 @@ export class FaceitClient implements StatsSource {
   async fetchEloHistory(playerId: string, count: number): Promise<EloAfterMatch[]> {
     try {
       const res = await fetch(`https://www.faceit.com/api/stats/v1/stats/time/users/${playerId}/games/${GAME}?page=0&size=${count}`, {
-        headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0 FaceitWatcher' },
+        headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0 FaceitWatchr' },
       });
       if (!res.ok) return [];
       const body = await res.json();
