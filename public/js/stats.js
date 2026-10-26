@@ -1,7 +1,7 @@
 // Statistik-Tab im Editor: Elo-Verlauf, aktuelle Season und Level-Grenzen.
 // Die Zahlen kommen aus /api/stats, also aus allen gespeicherten Faceit-Matches (keine eigene Faceit-Abfrage).
 // Matches ohne Elo (Hubs, Turniere) zählen mit, nur Ø pro Match rechnet der Server ohne sie.
-import { locale, t } from './i18n.js';
+import { locale, setText, t } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
 const NS = 'http://www.w3.org/2000/svg';
@@ -50,7 +50,7 @@ function renderChart() {
   chart.replaceChildren();
   const points = data?.history ?? [];
   const matches = points.length - 1;
-  $('chartHead').textContent = t('chartHead', { n: Math.max(matches, 0) });
+  setText($('chartHead'), 'chartHead', { n: Math.max(matches, 0) });
   $('chartElo').textContent = data ? num(data.elo) : '–';
   setValue('chartChange', data && matches > 0 ? signed(data.change) : '', trendClass(data?.change ?? 0));
   setValue('trPeak', data && matches > 0 ? num(data.peak) : '–');
@@ -116,33 +116,34 @@ function renderChart() {
   svg('text', { x: W - right, y: H - 8, 'text-anchor': 'end' }, chart).textContent = shortDate(points[matches].finishedAt);
   chart.setAttribute('aria-label', t('chartAria', { n: matches, a: num(points[0].elo), b: num(data.elo) }));
 
-  const notes = [t('chartSource')];
-  if (points.some((p) => p.estimated)) notes.push(t('chartEstimated'));
-  if (next) notes.push(t('chartLevelLine', { l: next.level, e: num(next.elo) }));
-  $('chartNote').textContent = notes.join(' ');
+  const estimated = points.some((p) => p.estimated);
+  setText($('chartNote'), (l) => {
+    const notes = [t('chartSource', null, l)];
+    if (estimated) notes.push(t('chartEstimated', null, l));
+    if (next) notes.push(t('chartLevelLine', { l: next.level, e: num(next.elo) }, l));
+    return notes.join(' ');
+  });
 }
 
 function renderSeason() {
   const s = data?.season;
-  $('seasonSince').textContent = s ? t('seasonSince', { d: shortDate(s.start) }) : '';
+  setText($('seasonSince'), s && 'seasonSince', s && { d: shortDate(s.start) });
   setValue('ssElo', s?.eloChange != null ? signed(s.eloChange) : '–', trendClass(s?.eloChange ?? 0));
   setValue('ssWL', s ? `${s.wins} – ${s.losses}` : '–');
   setValue('ssWr', s?.matches ? `${s.winRate} %` : '–');
   setValue('ssKd', s?.kd != null ? num(s.kd, 2) : '–');
   setValue('ssMap', s?.bestMap ? mapName(s.bestMap) : '–');
   const next = data?.nextLevel;
-  $('ssNextLabel').textContent = next || !data ? t('dtLvl', { l: next?.level ?? '' }).trim() : t('dtMaxLvl');
+  setText($('ssNextLabel'), (l) => (next || !data ? t('dtLvl', { l: next?.level ?? '' }, l).trim() : t('dtMaxLvl', null, l)));
   setValue('ssNext', next ? `${num(next.missing)} Elo` : data ? `${num(data.elo)} Elo` : '–');
 
-  let note = '';
-  if (data && !s) note = t('seasonNoStart');
+  if (data && !s) setText($('seasonNote'), 'seasonNoStart');
   else if (s) {
     // Eigene Daten erst ab dem ersten gespeicherten Stand, z. B. wenn FaceitWatchr nach Season-Start eingerichtet wurde
     const late = s.trackedSince && s.trackedSince.slice(0, 10) > s.start;
     const key = (late ? 'seasonNoteLate' : 'seasonNote') + (s.statsFromFaceit ? 'Faceit' : '');
-    note = t(key, { n: s.trackedMatches, d: late ? shortDate(s.trackedSince) : '' });
-  }
-  $('seasonNote').textContent = note;
+    setText($('seasonNote'), key, { n: s.trackedMatches, d: late ? shortDate(s.trackedSince) : '' });
+  } else setText($('seasonNote'), '');
 }
 
 function renderLevels() {

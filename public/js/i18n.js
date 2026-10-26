@@ -1,5 +1,7 @@
 // Sprachen für Editor und Login. Die Wahl teilt sich der Editor mit der Website (gleicher Schlüssel im localStorage).
 // Elemente mit data-i18n bekommen den Text, data-i18n-<attribut> übersetzt ein Attribut (title, placeholder, aria-label).
+// Texte stehen in allen Sprachen übereinander im selben Grid-Feld und nur die aktive ist sichtbar.
+// So ist jedes Element immer so groß wie seine längste Übersetzung und beim Sprachwechsel springt nichts.
 
 export const LANGS = ['de', 'en', 'ru', 'fr'];
 
@@ -485,16 +487,67 @@ let lang = LANGS.includes(stored) ? stored : LANGS.includes(browser) ? browser :
 export const getLang = () => lang;
 export const locale = () => LOCALES[lang];
 
-export function t(key, vars) {
-  const text = T[lang][key] ?? T.de[key] ?? key;
+export function t(key, vars, l = lang) {
+  const text = T[l]?.[key] ?? T.de[key] ?? key;
   return text.replace(/\{(\w+)\}/g, (m, k) => (vars && k in vars ? vars[k] : m));
 }
 
 /** Anzeigename eines Stats: eigene Beschriftungen bleiben, Standardnamen werden übersetzt. */
-export const widgetName = (label) => WIDGETS[lang]?.[label] ?? label;
+export const widgetName = (label, l = lang) => WIDGETS[l]?.[label] ?? label;
+
+const css = document.createElement('style');
+css.textContent =
+  'fw-i18n{display:inline-grid}fw-i18n.blk{display:grid}fw-i18n>fw-l{grid-area:1/1;display:block;visibility:hidden}' +
+  `${LANGS.map((l) => `html[lang="${l}"] fw-l[lang="${l}"]:not(.off)`).join(',')}{visibility:visible}` +
+  'button fw-i18n{text-align:center}';
+document.head.append(css);
+const BLOCK = /^(DIV|P|H[1-6]|LI|DT|DD)$/;
+
+/**
+ * Legt Texte in allen Sprachen übereinander. text(l, id) liefert den Text, ids sind mehrere Zustände
+ * (z. B. Kopieren/Kopiert), von denen showText() einen zeigt. Ohne ids gibt es nur einen Text.
+ */
+export function stackText(text, { block = false, ids = [''] } = {}) {
+  const box = document.createElement('fw-i18n');
+  if (block) box.className = 'blk';
+  for (const l of LANGS) {
+    for (const id of ids) {
+      const layer = document.createElement('fw-l');
+      layer.lang = l;
+      layer.dataset.id = id;
+      layer.textContent = text(l, id);
+      if (id !== ids[0]) layer.classList.add('off');
+      box.append(layer);
+    }
+  }
+  return box;
+}
+
+/** Übersetzter Text als Element, z. B. für Beschriftungen. */
+export const tx = (key, vars) => stackText((l) => t(key, vars, l));
+/** Name eines Stats in allen Sprachen. */
+export const wx = (label) => stackText((l) => widgetName(label, l));
+
+/** Setzt den Text eines Elements: key aus der Übersetzung oder eine Funktion (l) => Text. Leer = nichts. */
+export function setText(el, key, vars) {
+  if (!key) return el.replaceChildren();
+  const text = typeof key === 'function' ? key : (l, id) => t(id || key, vars, l);
+  el.replaceChildren(stackText(text, { block: BLOCK.test(el.tagName) }));
+}
+
+/** Zeigt bei mehreren Zuständen (data-i18n-alt) den Text mit diesem Schlüssel. */
+export function showText(el, id) {
+  el.querySelectorAll(':scope > fw-i18n > fw-l').forEach((layer) => layer.classList.toggle('off', layer.dataset.id !== id));
+}
 
 export function applyI18n(root = document) {
-  root.querySelectorAll('[data-i18n]').forEach((el) => (el.textContent = t(el.dataset.i18n)));
+  root.querySelectorAll('[data-i18n]').forEach((el) => {
+    const key = el.dataset.i18n;
+    if (el.fwKey === key) return;
+    el.fwKey = key;
+    const ids = [key, ...(el.dataset.i18nAlt ?? '').split(' ').filter(Boolean)];
+    el.replaceChildren(stackText((l, id) => t(id, null, l), { block: BLOCK.test(el.tagName), ids }));
+  });
   for (const attr of ['title', 'placeholder', 'aria-label']) {
     root.querySelectorAll(`[data-i18n-${attr}]`).forEach((el) => el.setAttribute(attr, t(el.getAttribute(`data-i18n-${attr}`))));
   }
