@@ -432,7 +432,7 @@ function renderRecentElo() {
     const li = document.createElement('li');
     const res = Object.assign(document.createElement('span'), { className: `res ${m.result}`, textContent: m.result });
     const date = m.finishedAt ? new Date(m.finishedAt).toLocaleString(locale(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-    const info = Object.assign(document.createElement('span'), { className: 'info', textContent: [m.map.replace(/^de_/, ''), date].join(' · ') + (m.mvp ? ' 👑' : '') });
+    const info = Object.assign(document.createElement('span'), { className: 'info', textContent: [m.map.replace(/^de_/, ''), date, m.ranked === false ? t('noElo') : ''].filter(Boolean).join(' · ') + (m.mvp ? ' 👑' : '') });
     const amount = m.eloChange == null ? '' : String(Math.abs(m.eloChange));
     const field = Object.assign(document.createElement('input'), { type: 'number', min: 0, max: 100, step: 1 });
     // Geschätzt: nur als Platzhalter zeigen, damit klar ist, dass noch nichts eingetragen wurde

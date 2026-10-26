@@ -46,9 +46,14 @@ export interface EloChartPoint {
   change: number;
   /** Elo-Änderung geschätzt statt gemessen oder eingetragen */
   estimated: boolean;
+  /** false = Match ohne Elo (Hub, Turnier, …), change ist dann 0 */
+  ranked: boolean;
 }
 
-/** Auswertung für den Statistik-Tab im Editor, nur aus gespeicherten Matchmaking-Matches. */
+/** Matches ohne Elo (Hubs, Turniere, Ligen, Customs) zählen überall mit, ändern aber die Elo nicht. Alte Matches ohne Angabe = mit Elo. */
+const isRanked = (m: { ranked?: boolean }) => m.ranked !== false;
+
+/** Auswertung für den Statistik-Tab im Editor aus allen gespeicherten Faceit-Matches (auch ohne Elo). */
 export interface StatsOverview {
   elo: number;
   level: number;
@@ -60,6 +65,9 @@ export interface StatsOverview {
   change: number;
   peak: number;
   low: number;
+  /** Matches im Verlauf, die Elo gebracht oder gekostet haben (ohne Hubs, Turniere, …) */
+  eloMatches: number;
+  /** Ø Elo-Änderung pro Match, nur über Matches mit Elo; 0-Elo-Matches verfälschen den Schnitt nicht */
   avgPerMatch: number;
   season:
     | (SeasonStats & {
@@ -224,7 +232,7 @@ export class Tracker extends EventEmitter {
     };
   }
 
-  /** Nur Matchmaking zählt: die gespeicherten (bereits gefilterten) Matches seit `since` */
+  /** Alle gespeicherten Faceit-Matches seit `since` (Matchmaking, Hubs, Turniere, …) */
   private sessionMatches(playerId: string, since: string, limit = 200): MatchResult[] {
     return [...this.storage.listMatches(playerId, limit), ...this.pending.map((p) => p.match)].filter((m) => m.finishedAt >= since);
   }
@@ -241,17 +249,19 @@ export class Tracker extends EventEmitter {
     const points: EloChartPoint[] = [];
     let elo = player.elo;
     for (const m of this.storage.listMatches(player.playerId, count)) {
-      const change = m.eloChange ?? (m.result === 'W' ? typical : -typical);
-      points.unshift({ matchId: m.matchId, finishedAt: m.finishedAt, result: m.result, map: m.map, elo, change, estimated: m.eloChange === null || !!m.eloEstimated });
+      const ranked = isRanked(m);
+      const change = ranked ? (m.eloChange ?? (m.result === 'W' ? typical : -typical)) : 0;
+      points.unshift({ matchId: m.matchId, finishedAt: m.finishedAt, result: m.result, map: m.map, elo, change, estimated: ranked && (m.eloChange === null || !!m.eloEstimated), ranked });
       elo -= change;
     }
-    points.unshift({ matchId: '', finishedAt: '', result: null, map: '', elo, change: 0, estimated: false });
+    points.unshift({ matchId: '', finishedAt: '', result: null, map: '', elo, change: 0, estimated: false, ranked: true });
     const matches = points.length - 1;
+    const eloMatches = points.filter((p) => p.result && p.ranked).length;
     const change = player.elo - elo;
     const values = points.map((p) => p.elo);
     const next = LEVEL_THRESHOLDS.find((min) => min > player.elo);
 
-    // Season: Siege/Niederlagen zählt Faceit (alle Matchmaking-Matches seit Season-Start),
+    // Season: Siege/Niederlagen zählt Faceit (alle Matches seit Season-Start, auch ohne Elo),
     // Elo, K/D und beste Map kommen aus den eigenen gespeicherten Daten seit Season-Start
     let season: StatsOverview['season'] = null;
     if (this.state.season) {
@@ -289,7 +299,8 @@ export class Tracker extends EventEmitter {
       change,
       peak: Math.max(...values),
       low: Math.min(...values),
-      avgPerMatch: matches ? Math.round((change / matches) * 10) / 10 : 0,
+      eloMatches,
+      avgPerMatch: eloMatches ? Math.round((change / eloMatches) * 10) / 10 : 0,
       season,
     };
   }
@@ -303,24 +314,27 @@ export class Tracker extends EventEmitter {
    * Beim allerersten Abruf werden die letzten Matches nur still gespeichert.
    */
   private async recordNewMatches(previous: PlayerSnapshot | null, player: PlayerSnapshot) {
-    const changed = !previous || previous.matches !== player.matches || previous.elo !== player.elo;
     try {
-      if (changed || this.pending.length) {
-        const isKnown = (id: string) => this.storage.hasMatch(id) || this.pending.some((p) => p.match.matchId === id);
-        const fresh = (await this.source.fetchRecentMatches(player.playerId, 5, isKnown)).reverse();
-        const batch: MatchResult[] = [];
-        fresh.forEach((d, i) => {
-          const match: MatchResult = { ...d, avatar: player.avatar, avatarFrame: player.avatarFrame, eloBefore: null, eloAfter: null, eloChange: null, level: player.level };
-          if (!previous || i < fresh.length - 1) {
-            // Erster Start oder ältere von mehreren neuen Matches: Elo wird später gemeinsam geschätzt
-            if (previous) batch.push(match);
-            this.publish(match, !!previous);
-          } else {
-            // Bei mehreren neuen Matches gilt die Elo vor dem ältesten davon
-            match.eloBefore = batch.length ? previous.elo : (this.eloBefore(player.playerId, match.finishedAt) ?? previous.elo);
-            this.pending.push({ match, polls: 0, batch });
-          }
-        });
+      // Bei jedem Abruf nachsehen: Matches ohne Elo (Hubs, Turniere, …) ändern weder Elo noch sicher die Match-Zahl
+      const isKnown = (id: string) => this.storage.hasMatch(id) || this.pending.some((p) => p.match.matchId === id);
+      const fresh = (await this.source.fetchRecentMatches(player.playerId, 5, isKnown)).reverse();
+      const newestRanked = fresh.filter(isRanked).at(-1);
+      const batch: MatchResult[] = [];
+      for (const d of fresh) {
+        const match: MatchResult = { ...d, avatar: player.avatar, avatarFrame: player.avatarFrame, eloBefore: null, eloAfter: null, eloChange: null, level: player.level };
+        if (!isRanked(d)) {
+          // Ohne Elo steht die Änderung sofort fest: 0
+          match.eloChange = 0;
+          this.publish(match, !!previous);
+        } else if (!previous || d !== newestRanked) {
+          // Erster Start oder ältere von mehreren neuen Matches: Elo wird später gemeinsam geschätzt
+          if (previous) batch.push(match);
+          this.publish(match, !!previous);
+        } else {
+          // Bei mehreren neuen Matches gilt die Elo vor dem ältesten davon
+          match.eloBefore = batch.length ? previous.elo : (this.eloBefore(player.playerId, match.finishedAt) ?? previous.elo);
+          this.pending.push({ match, polls: 0, batch });
+        }
       }
     } catch (err) {
       console.error('Match-Details konnten nicht geladen werden:', err instanceof Error ? err.message : err);
@@ -369,7 +383,7 @@ export class Tracker extends EventEmitter {
 
   /** Durchschnittliche Elo-Änderung der gemessenen Matches, als Schätzwert für Matches ohne Elo. */
   private typicalElo(playerId: string): number {
-    const exact = this.storage.listMatches(playerId, 20).filter((m) => m.eloChange !== null && !m.eloEstimated);
+    const exact = this.storage.listMatches(playerId, 20).filter((m) => isRanked(m) && m.eloChange !== null && !m.eloEstimated);
     if (!exact.length) return 25;
     const avg = exact.reduce((sum, m) => sum + Math.abs(m.eloChange!), 0) / exact.length;
     // Ausreißer (z. B. Elo-Korrekturen von Faceit) sollen die Schätzung nicht verzerren
@@ -399,6 +413,8 @@ export class Tracker extends EventEmitter {
     const match = this.storage.listMatches(player.playerId, 50).find((m) => m.matchId === matchId);
     if (!match) throw new Error('Match nicht gefunden');
     match.eloChange = amount === null ? null : match.result === 'W' ? Math.abs(amount) : -Math.abs(amount);
+    // Wer bei einem Match ohne Elo einen Wert einträgt, korrigiert die Erkennung: dann zählt es als Match mit Elo
+    if (amount) match.ranked = true;
     match.eloEstimated = false;
     this.storage.saveMatch(match);
     this.state.recentMatches = await this.recentMatches(player);
@@ -422,7 +438,7 @@ export class Tracker extends EventEmitter {
   private async recentMatches(player: PlayerSnapshot): Promise<RecentMatch[]> {
     const count = Math.max(player.recentResults.length, 5);
     const stored = this.storage.listMatches(player.playerId, count);
-    const missing = stored.filter((m) => m.eloChange === null);
+    const missing = stored.filter((m) => isRanked(m) && m.eloChange === null);
     const key = missing.map((m) => m.matchId).join();
     const due = key !== this.eloLookup.key || Date.now() - this.eloLookup.at > ELO_RETRY_MS;
     if (missing.length && this.source.fetchEloHistory && due) {
@@ -450,18 +466,19 @@ export class Tracker extends EventEmitter {
     // Matches ohne Elo (z. B. vor dem ersten Start gespielt) bekommen einen Schätzwert
     const typical = this.typicalElo(player.playerId);
     await this.fillMatchMvp(stored);
-    const recent: RecentMatch[] = stored.map(({ matchId, result, eloChange, eloEstimated, matchMvp, map, finishedAt }) => ({
+    const recent: RecentMatch[] = stored.map(({ matchId, result, eloChange, eloEstimated, matchMvp, ranked, map, finishedAt }) => ({
       matchId,
       result,
-      eloChange: eloChange ?? (result === 'W' ? typical : -typical),
-      estimated: eloChange === null || !!eloEstimated,
+      eloChange: ranked === false ? 0 : (eloChange ?? (result === 'W' ? typical : -typical)),
+      estimated: ranked !== false && (eloChange === null || !!eloEstimated),
       mvp: !!matchMvp,
+      ranked: ranked !== false,
       map,
       finishedAt,
     }));
     // Noch nicht genug gespeicherte Matches (z. B. Demo-Modus): Rest ohne Elo aus Faceits Ergebnissen auffüllen
     const faceitNewestFirst = this.newestFirst ? player.recentResults : [...player.recentResults].reverse();
-    for (const result of faceitNewestFirst.slice(recent.length)) recent.push({ matchId: '', result, eloChange: result === 'W' ? typical : -typical, estimated: true, mvp: false, map: '', finishedAt: '' });
+    for (const result of faceitNewestFirst.slice(recent.length)) recent.push({ matchId: '', result, eloChange: result === 'W' ? typical : -typical, estimated: true, mvp: false, ranked: true, map: '', finishedAt: '' });
     // Im Overlay immer neuestes Match links, dann nach rechts immer älter
     return recent;
   }
@@ -471,8 +488,8 @@ export class Tracker extends EventEmitter {
     if (announce) this.emit('match', match);
   }
 
-  /** Die Match-Historie wird nur neu geladen, wenn seit der letzten Berechnung ein Match dazukam. */
-  private seasonMatchesAt = -1;
+  /** Die Match-Historie wird nur neu geladen, wenn seit der letzten Berechnung ein Match dazukam (auch eins ohne Elo). */
+  private seasonMatchesAt = '';
 
   private async updateSeason(player: PlayerSnapshot) {
     const start = this.state.seasonStart;
@@ -480,10 +497,11 @@ export class Tracker extends EventEmitter {
       this.state.season = null;
       return;
     }
-    if (this.state.season?.start === start && this.seasonMatchesAt === player.matches) return;
+    const at = `${player.matches}:${this.storage.listMatches(player.playerId, 1)[0]?.matchId ?? ''}`;
+    if (this.state.season?.start === start && this.seasonMatchesAt === at) return;
     const record = await this.source.fetchRecordSince(player.playerId, new Date(start));
     const { matches, wins } = record;
-    this.seasonMatchesAt = player.matches;
+    this.seasonMatchesAt = at;
     // Liefert Faceit keine Match-Stats, zählen die gespeicherten Matches seit Season-Start
     const saved = record.kd === null ? this.savedAverages(player.playerId, new Date(start).toISOString()) : null;
     this.state.season = {

@@ -1,5 +1,6 @@
 // Statistik-Tab im Editor: Elo-Verlauf, aktuelle Season und Level-Grenzen.
-// Die Zahlen kommen aus /api/stats, also nur aus gespeicherten Matchmaking-Matches (keine eigene Faceit-Abfrage).
+// Die Zahlen kommen aus /api/stats, also aus allen gespeicherten Faceit-Matches (keine eigene Faceit-Abfrage).
+// Matches ohne Elo (Hubs, Turniere) zählen mit, nur Ø pro Match rechnet der Server ohne sie.
 import { locale, t } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
@@ -54,7 +55,9 @@ function renderChart() {
   setValue('chartChange', data && matches > 0 ? signed(data.change) : '', trendClass(data?.change ?? 0));
   setValue('trPeak', data && matches > 0 ? num(data.peak) : '–');
   setValue('trLow', data && matches > 0 ? num(data.low) : '–');
-  setValue('trAvg', data && matches > 0 ? signed(data.avgPerMatch, 1) : '–', trendClass(data?.avgPerMatch ?? 0));
+  // Ø nur über Matches mit Elo, ältere Server liefern eloMatches noch nicht
+  const eloMatches = data?.eloMatches ?? matches;
+  setValue('trAvg', data && eloMatches > 0 ? signed(data.avgPerMatch, 1) : '–', trendClass(data?.avgPerMatch ?? 0));
 
   const W = 600, H = 220, left = 44, right = 8, top = 22, bottom = 28;
   if (matches < 1) {
@@ -96,14 +99,17 @@ function renderChart() {
 
   points.forEach((p, i) => {
     if (!p.result) return;
+    // Matches ohne Elo (Hub, Turnier) grau, sie lassen die Linie flach
+    const color = p.ranked === false ? 'var(--muted)' : p.result === 'W' ? '#46d3b0' : '#ff5500';
     const dot = svg('circle', {
       cx: x(i), cy: y(p.elo), r: i === matches ? 5.5 : 3.5,
-      fill: p.estimated ? 'var(--panel)' : p.result === 'W' ? '#46d3b0' : '#ff5500',
-      stroke: p.result === 'W' ? '#46d3b0' : '#ff5500',
+      fill: p.estimated ? 'var(--panel)' : color,
+      stroke: color,
       class: `dot${p.estimated ? ' estimated' : ''}`,
     }, chart);
     const parts = [p.result, mapName(p.map), new Date(p.finishedAt).toLocaleString(locale(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })];
-    svg('title', {}, dot).textContent = `${parts.filter(Boolean).join(' · ')}\n${signed(p.change)} → ${num(p.elo)} Elo${p.estimated ? ` (${t('estimated')})` : ''}`;
+    const note = p.ranked === false ? ` (${t('noElo')})` : p.estimated ? ` (${t('estimated')})` : '';
+    svg('title', {}, dot).textContent = `${parts.filter(Boolean).join(' · ')}\n${signed(p.change)} → ${num(p.elo)} Elo${note}`;
   });
 
   svg('text', { x: left, y: H - 8 }, chart).textContent = shortDate(points[1].finishedAt);
