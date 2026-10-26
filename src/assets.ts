@@ -40,7 +40,7 @@ export class AssetCache {
 
     const job = (async () => {
       try {
-        const res = await fetch(url, { headers: { 'User-Agent': 'FaceitWatcher' } });
+        const res = await fetch(url, { headers: { 'User-Agent': 'FaceitWatchr' } });
         const contentType = res.headers.get('content-type') ?? '';
         if (!res.ok || !contentType.startsWith('image/')) return null;
         const body = Buffer.from(await res.arrayBuffer());
