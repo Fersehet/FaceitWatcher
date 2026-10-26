@@ -41,8 +41,8 @@ The screenshots use the stats of donk (Faceit donk666, as of Oct 25, 2026), play
 ## Setup and start
 
 ```bash
-git clone https://github.com/Fersehet/FaceitWatcher.git
-cd FaceitWatcher
+git clone https://github.com/Fersehet/FaceitWatchr.git
+cd FaceitWatchr
 npm install
 cp .env.example .env   # Windows: copy .env.example .env
 ```
