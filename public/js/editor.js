@@ -28,8 +28,10 @@ let scale = 1;
 let saveTimer = null;
 function scheduleSave() {
   clearTimeout(saveTimer);
+  // Das geänderte Overlay festhalten: Wird inzwischen ein anderes geöffnet, darf die Änderung nicht verloren gehen
+  const target = overlay;
   saveTimer = setTimeout(async () => {
-    const saved = await api('PUT', `/api/overlays/${overlay.id}`, overlay);
+    const saved = await api('PUT', `/api/overlays/${target.id}`, target);
     overlays = overlays.map((o) => (o.id === saved.id ? saved : o));
     renderOverlaySelect();
   }, 300);
