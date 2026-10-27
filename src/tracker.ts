@@ -321,6 +321,8 @@ export class Tracker extends EventEmitter {
       const newestRanked = fresh.filter(isRanked).at(-1);
       const batch: MatchResult[] = [];
       for (const d of fresh) {
+        // Laufen zwei Abrufe gleichzeitig (Timer und „Jetzt aktualisieren“), hat der andere das Match evtl. schon erfasst
+        if (isKnown(d.matchId)) continue;
         const match: MatchResult = { ...d, avatar: player.avatar, avatarFrame: player.avatarFrame, eloBefore: null, eloAfter: null, eloChange: null, level: player.level };
         if (!isRanked(d)) {
           // Ohne Elo steht die Änderung sofort fest: 0
