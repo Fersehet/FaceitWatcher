@@ -1,7 +1,7 @@
 // Statistik-Tab im Editor: Elo-Verlauf, aktuelle Season und Level-Grenzen.
 // Die Zahlen kommen aus /api/stats, also aus allen gespeicherten Faceit-Matches (keine eigene Faceit-Abfrage).
 // Matches ohne Elo (Hubs, Turniere) zählen mit, nur Ø pro Match rechnet der Server ohne sie.
-import { locale, setText, t } from './i18n.js';
+import { locale, localeOf, setText, t } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
 const NS = 'http://www.w3.org/2000/svg';
@@ -12,8 +12,9 @@ const LEVEL_COLORS = ['#b8c1d1', '#46d3b0', '#46d3b0', '#ffd84d', '#ffd84d', '#f
 
 let data = null;
 
-const num = (n, digits = 0) => n.toLocaleString(locale(), { minimumFractionDigits: digits, maximumFractionDigits: digits });
-const signed = (n, digits = 0) => `${n > 0 ? '+' : n < 0 ? '−' : '±'}${num(Math.abs(n), digits)}`;
+// l: Sprache für das Zahlenformat, Standard ist die aktuelle
+const num = (n, digits = 0, l) => n.toLocaleString(l ? localeOf(l) : locale(), { minimumFractionDigits: digits, maximumFractionDigits: digits });
+const signed = (n, digits = 0, l) => `${n > 0 ? '+' : n < 0 ? '−' : '±'}${num(Math.abs(n), digits, l)}`;
 const trendClass = (n) => (n > 0 ? 'up' : n < 0 ? 'down' : '');
 const mapName = (map) => map.replace(/^de_/, '').replace(/^\w/, (c) => c.toUpperCase());
 const shortDate = (iso) => new Date(iso).toLocaleDateString(locale(), { day: '2-digit', month: '2-digit' });
@@ -25,9 +26,11 @@ function svg(tag, attrs, parent) {
   return node;
 }
 
+// text als Funktion (l) => Text: Zahlen in allen Sprachen übereinander, damit Formate wie 1.916 / 1 916 nichts verschieben
 function setValue(id, text, cls = '') {
   const node = $(id);
-  node.textContent = text;
+  if (typeof text === 'function') setText(node, text);
+  else node.textContent = text;
   node.className = cls;
 }
 
@@ -51,13 +54,13 @@ function renderChart() {
   const points = data?.history ?? [];
   const matches = points.length - 1;
   setText($('chartHead'), 'chartHead', { n: Math.max(matches, 0) });
-  $('chartElo').textContent = data ? num(data.elo) : '–';
-  setValue('chartChange', data && matches > 0 ? signed(data.change) : '', trendClass(data?.change ?? 0));
-  setValue('trPeak', data && matches > 0 ? num(data.peak) : '–');
-  setValue('trLow', data && matches > 0 ? num(data.low) : '–');
+  setValue('chartElo', data ? (l) => num(data.elo, 0, l) : '–');
+  setValue('chartChange', data && matches > 0 ? (l) => signed(data.change, 0, l) : '', trendClass(data?.change ?? 0));
+  setValue('trPeak', data && matches > 0 ? (l) => num(data.peak, 0, l) : '–');
+  setValue('trLow', data && matches > 0 ? (l) => num(data.low, 0, l) : '–');
   // Ø nur über Matches mit Elo, ältere Server liefern eloMatches noch nicht
   const eloMatches = data?.eloMatches ?? matches;
-  setValue('trAvg', data && eloMatches > 0 ? signed(data.avgPerMatch, 1) : '–', trendClass(data?.avgPerMatch ?? 0));
+  setValue('trAvg', data && eloMatches > 0 ? (l) => signed(data.avgPerMatch, 1, l) : '–', trendClass(data?.avgPerMatch ?? 0));
 
   const W = 600, H = 220, left = 44, right = 8, top = 22, bottom = 28;
   if (matches < 1) {
@@ -128,14 +131,14 @@ function renderChart() {
 function renderSeason() {
   const s = data?.season;
   setText($('seasonSince'), s && 'seasonSince', s && { d: shortDate(s.start) });
-  setValue('ssElo', s?.eloChange != null ? signed(s.eloChange) : '–', trendClass(s?.eloChange ?? 0));
+  setValue('ssElo', s?.eloChange != null ? (l) => signed(s.eloChange, 0, l) : '–', trendClass(s?.eloChange ?? 0));
   setValue('ssWL', s ? `${s.wins} – ${s.losses}` : '–');
   setValue('ssWr', s?.matches ? `${s.winRate} %` : '–');
-  setValue('ssKd', s?.kd != null ? num(s.kd, 2) : '–');
+  setValue('ssKd', s?.kd != null ? (l) => num(s.kd, 2, l) : '–');
   setValue('ssMap', s?.bestMap ? mapName(s.bestMap) : '–');
   const next = data?.nextLevel;
   setText($('ssNextLabel'), (l) => (next || !data ? t('dtLvl', { l: next?.level ?? '' }, l).trim() : t('dtMaxLvl', null, l)));
-  setValue('ssNext', next ? `${num(next.missing)} Elo` : data ? `${num(data.elo)} Elo` : '–');
+  setValue('ssNext', next ? (l) => `${num(next.missing, 0, l)} Elo` : data ? (l) => `${num(data.elo, 0, l)} Elo` : '–');
 
   if (data && !s) setText($('seasonNote'), 'seasonNoStart');
   else if (s) {

@@ -486,6 +486,7 @@ let lang = LANGS.includes(stored) ? stored : LANGS.includes(browser) ? browser :
 
 export const getLang = () => lang;
 export const locale = () => LOCALES[lang];
+export const localeOf = (l) => LOCALES[l];
 
 export function t(key, vars, l = lang) {
   const text = T[l]?.[key] ?? T.de[key] ?? key;
@@ -543,6 +544,8 @@ export function showText(el, id) {
 export function applyI18n(root = document) {
   root.querySelectorAll('[data-i18n]').forEach((el) => {
     const key = el.dataset.i18n;
+    // data-i18n-free: Text darf mitwachsen, weil dahinter in der Zeile nichts verrutscht (z. B. Rail-Label)
+    if (el.hasAttribute('data-i18n-free')) return void (el.textContent = t(key));
     if (el.fwKey === key) return;
     el.fwKey = key;
     const ids = [key, ...(el.dataset.i18nAlt ?? '').split(' ').filter(Boolean)];
